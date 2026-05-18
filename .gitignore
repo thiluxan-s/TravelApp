@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Build output
+.next/
+out/
+dist/
+build/
+
+# Env files — never commit secrets
+.env
+.env.local
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Misc
+.turbo
+.vercel
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Claude Code local overrides (your personal CLAUDE.local.md pattern from the CLO workflow)
+CLAUDE.local.md
+.claude/

@@ -83,7 +83,7 @@ Handles:
 - `user.updated` → `updateUserEmail()` if email changed
 - `user.deleted` → `deleteUserByClerkId()`
 
-Returns `400` on signature failure, `200` on success, `400` on unhandled event type (with body `{ ignored: true }`).
+Returns `400` on signature failure, `200` on success, `200` on unhandled event type (with body `{ ignored: true }`). 2xx = "received, don't retry" — reserve 4xx for genuinely bad input only.
 
 ---
 

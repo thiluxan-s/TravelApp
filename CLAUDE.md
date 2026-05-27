@@ -39,7 +39,7 @@ I'm Thiluxan, a full-stack developer with 3 years on a production React/TypeScri
 
 These are decided. Don't propose swaps without asking.
 
-- **Framework:** Next.js 15 (App Router) + TypeScript (strict mode)
+- **Framework:** Next.js 16 (App Router) + TypeScript (strict mode)
 - **Styling:** Tailwind CSS + shadcn/ui
 - **Database:** Neon Postgres (serverless) + Drizzle ORM
 - **Auth:** Clerk

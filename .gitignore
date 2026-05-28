@@ -35,4 +35,4 @@ next-env.d.ts
 
 # Claude Code local overrides (your personal CLAUDE.local.md pattern from the CLO workflow)
 CLAUDE.local.md
-.claude/
+.claude/.superpowers/

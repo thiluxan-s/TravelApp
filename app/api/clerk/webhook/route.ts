@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import { Webhook } from 'svix';
 import type { WebhookEvent } from '@clerk/nextjs/server';
-import { env } from '@/lib/env';
+import { env } from '@/lib/env.server';
 import {
   createUserFromClerk,
   updateUserEmail,

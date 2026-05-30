@@ -84,7 +84,7 @@ export function NewTripDialog() {
               <Button
                 render={<button type="button" />}
                 variant="ghost"
-                onClick={() => setOpen(false)}
+                onClick={() => handleOpenChange(false)}
               >
                 Cancel
               </Button>

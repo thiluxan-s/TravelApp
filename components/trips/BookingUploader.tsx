@@ -45,7 +45,13 @@ function uploadViaXhr(
   });
 }
 
-export function BookingUploader({ tripId }: { tripId: string }) {
+export function BookingUploader({
+  tripId,
+  onUploadComplete,
+}: {
+  tripId: string;
+  onUploadComplete?: () => void;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [, startTransition] = useTransition();
@@ -107,6 +113,7 @@ export function BookingUploader({ tripId }: { tripId: string }) {
       }
 
       updatePending({ tempId, fileName: file.name, status: 'parsing', progress: 100 });
+      onUploadComplete?.();
     });
   }
 

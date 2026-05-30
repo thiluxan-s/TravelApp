@@ -37,6 +37,11 @@ export function TripDetailClient({
     };
   }, [tripId, isPolling]);
 
+  async function refreshData() {
+    const result = await getTripAction(tripId);
+    if (result.ok) setData(result.data);
+  }
+
   function handleDelete() {
     if (!confirm('Delete this trip and all its bookings? This cannot be undone.')) return;
     startDelete(async () => {
@@ -87,7 +92,7 @@ export function TripDetailClient({
               ))}
             </div>
           </div>
-          <BookingUploader tripId={tripId} />
+          <BookingUploader tripId={tripId} onUploadComplete={refreshData} />
         </div>
 
         {/* Right: map placeholder */}

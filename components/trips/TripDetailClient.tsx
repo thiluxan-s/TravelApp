@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { BookingCard } from '@/components/trips/BookingCard';
 import { BookingUploader } from '@/components/trips/BookingUploader';
@@ -25,11 +26,15 @@ export function TripDetailClient({
 
   useEffect(() => {
     if (!isPolling) return;
+    let cancelled = false;
     const interval = setInterval(async () => {
       const result = await getTripAction(tripId);
-      if (result.ok) setData(result.data);
+      if (!cancelled && result.ok) setData(result.data);
     }, 3000);
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [tripId, isPolling]);
 
   function handleDelete() {
@@ -49,9 +54,9 @@ export function TripDetailClient({
       {/* Page header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <a href="/trips" className="text-xs text-muted-foreground hover:text-foreground mb-1 block">
+          <Link href="/trips" className="text-xs text-muted-foreground hover:text-foreground mb-1 block">
             ← Your trips
-          </a>
+          </Link>
           <h1 className="text-xl font-semibold">{data.title}</h1>
           {data.destination && (
             <p className="text-sm text-muted-foreground mt-0.5">{data.destination}</p>

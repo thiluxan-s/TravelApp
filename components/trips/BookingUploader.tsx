@@ -1,7 +1,6 @@
 'use client';
 
 import { useOptimistic, useRef, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   requestBookingUploadAction,
@@ -47,7 +46,6 @@ function uploadViaXhr(
 }
 
 export function BookingUploader({ tripId }: { tripId: string }) {
-  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [, startTransition] = useTransition();
@@ -109,7 +107,6 @@ export function BookingUploader({ tripId }: { tripId: string }) {
       }
 
       updatePending({ tempId, fileName: file.name, status: 'parsing', progress: 100 });
-      router.refresh();
     });
   }
 
@@ -150,7 +147,9 @@ export function BookingUploader({ tripId }: { tripId: string }) {
         role="button"
         tabIndex={0}
         onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-        onDragLeave={() => setIsDragOver(false)}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false);
+        }}
         onDrop={(e) => { e.preventDefault(); setIsDragOver(false); handleFiles(e.dataTransfer.files); }}
         onClick={() => inputRef.current?.click()}
         onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
@@ -170,7 +169,10 @@ export function BookingUploader({ tripId }: { tripId: string }) {
           accept=".pdf,.jpg,.jpeg,.png,.webp,.heic"
           multiple
           className="sr-only"
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => {
+            handleFiles(e.target.files);
+            e.target.value = '';
+          }}
         />
       </div>
     </div>

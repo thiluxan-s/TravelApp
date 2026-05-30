@@ -45,5 +45,7 @@ function StatusLine({ booking }: { booking: Booking }) {
           {booking.parseError ?? "Couldn't parse this file"}
         </p>
       );
+    default:
+      return null;
   }
 }

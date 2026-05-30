@@ -14,13 +14,11 @@ const r2 = new S3Client({
 export async function getPresignedUploadUrl(
   key: string,
   mimeType: string,
-  fileSizeBytes: number,
 ): Promise<string> {
   const command = new PutObjectCommand({
     Bucket: env.R2_BUCKET_NAME,
     Key: key,
     ContentType: mimeType,
-    ContentLength: fileSizeBytes,
   });
   return getSignedUrl(r2, command, { expiresIn: 600 });
 }

@@ -80,7 +80,7 @@ export async function requestBookingUploadAction(input: {
 
     let uploadUrl: string;
     try {
-      uploadUrl = await getPresignedUploadUrl(fileKey, input.mimeType, input.fileSize);
+      uploadUrl = await getPresignedUploadUrl(fileKey, input.mimeType);
     } catch {
       // Clean up the orphaned booking row
       await db.delete(bookings).where(eq(bookings.id, booking.id));

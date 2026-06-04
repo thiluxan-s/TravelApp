@@ -88,7 +88,7 @@ export function TripDetailClient({
             </h2>
             <div className="space-y-2">
               {data.bookings.map((booking) => (
-                <BookingCard key={booking.id} booking={booking} />
+                <BookingCard key={booking.id} booking={booking} segment={booking.segments[0]} />
               ))}
             </div>
           </div>

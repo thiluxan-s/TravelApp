@@ -15,6 +15,13 @@
       "when": 1779932290539,
       "tag": "0001_wealthy_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780611276614,
+      "tag": "0002_groovy_miracleman",
+      "breakpoints": true
     }
   ]
 }

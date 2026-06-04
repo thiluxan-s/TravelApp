@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getUserByClerkId } from '@/lib/db/repositories/users';
 import { getTripById, getTripWithBookings, type TripWithBookings } from '@/lib/db/repositories/trips';
 import { createBooking, getBookingById, updateBookingStatus } from '@/lib/db/repositories/bookings';
+import { inngest } from '@/lib/inngest/client';
 import { getPresignedUploadUrl } from '@/lib/r2';
 import { db } from '@/lib/db';
 import { bookings } from '@/lib/db/schema';
@@ -111,7 +112,7 @@ export async function confirmBookingUploadedAction(
     }
 
     await updateBookingStatus(bookingId, 'parsing');
-    // Phase 3 will add: await inngest.send({ name: 'booking/uploaded', data: { bookingId } })
+    await inngest.send({ name: 'booking/uploaded', data: { bookingId } });
 
     return { ok: true };
   } catch {

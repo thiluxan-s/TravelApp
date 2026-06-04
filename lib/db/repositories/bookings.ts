@@ -41,3 +41,13 @@ export async function getBookingsByTripId(tripId: string): Promise<Booking[]> {
     orderBy: asc(bookings.createdAt),
   });
 }
+
+export async function updateBooking(
+  id: string,
+  data: Partial<Pick<NewBooking, 'status' | 'type' | 'parseError' | 'rawAiOutput'>>,
+): Promise<void> {
+  await db
+    .update(bookings)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(bookings.id, id));
+}

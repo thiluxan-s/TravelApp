@@ -1,6 +1,6 @@
 import type { Booking, Segment } from '@/lib/db/schema';
-import type { FlightDetails } from '@/lib/ai/schemas/flight';
-import type { HotelDetails } from '@/lib/ai/schemas/hotel';
+import { FlightDetailsSchema } from '@/lib/ai/schemas/flight';
+import { HotelDetailsSchema } from '@/lib/ai/schemas/hotel';
 
 type Props = {
   booking: Booking;
@@ -75,7 +75,9 @@ function ParsedLine({ segment }: { segment?: Segment }) {
   if (!segment) return <p className="text-xs text-emerald-500">✓ Parsed</p>;
 
   if (segment.type === 'flight') {
-    const details = segment.details as FlightDetails;
+    const parsed = FlightDetailsSchema.safeParse(segment.details);
+    if (!parsed.success) return <p className="text-xs text-emerald-500">✓ Parsed</p>;
+    const details = parsed.data;
     const depTime = formatLocalTime(new Date(segment.startTime), segment.startTimezone);
     const arrTime = formatLocalTime(new Date(segment.endTime), segment.endTimezone);
     return (
@@ -94,7 +96,9 @@ function ParsedLine({ segment }: { segment?: Segment }) {
   }
 
   if (segment.type === 'hotel_stay') {
-    const details = segment.details as HotelDetails;
+    const parsed = HotelDetailsSchema.safeParse(segment.details);
+    if (!parsed.success) return <p className="text-xs text-emerald-500">✓ Parsed</p>;
+    const details = parsed.data;
     const checkIn = formatLocalDate(new Date(segment.startTime), segment.startTimezone);
     const checkOut = formatLocalDate(new Date(segment.endTime), segment.endTimezone);
     return (

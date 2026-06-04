@@ -37,7 +37,7 @@ export async function getTripWithBookings(id: string) {
     with: {
       bookings: {
         orderBy: (b, { asc }) => [asc(b.createdAt)],
-        with: { segments: true },
+        with: { segments: { orderBy: (s, { asc }) => [asc(s.startTime)] } },
       },
     },
   });

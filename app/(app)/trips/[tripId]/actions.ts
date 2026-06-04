@@ -112,7 +112,12 @@ export async function confirmBookingUploadedAction(
     }
 
     await updateBookingStatus(bookingId, 'parsing');
-    await inngest.send({ name: 'booking/uploaded', data: { bookingId } });
+    try {
+      await inngest.send({ name: 'booking/uploaded', data: { bookingId } });
+    } catch {
+      await updateBookingStatus(bookingId, 'parsing_failed');
+      return { ok: false, error: 'Failed to queue document for parsing' };
+    }
 
     return { ok: true };
   } catch {

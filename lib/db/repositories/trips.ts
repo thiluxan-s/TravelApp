@@ -34,7 +34,12 @@ export async function getTripById(id: string): Promise<Trip | undefined> {
 export async function getTripWithBookings(id: string) {
   return db.query.trips.findFirst({
     where: eq(trips.id, id),
-    with: { bookings: { orderBy: (b, { asc }) => [asc(b.createdAt)] } },
+    with: {
+      bookings: {
+        orderBy: (b, { asc }) => [asc(b.createdAt)],
+        with: { segments: true },
+      },
+    },
   });
 }
 

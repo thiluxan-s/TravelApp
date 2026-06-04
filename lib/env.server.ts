@@ -9,6 +9,10 @@ const envSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().min(1),
   R2_BUCKET_NAME: z.string().min(1),
   R2_PUBLIC_URL: z.string().url(),
+  ANTHROPIC_API_KEY: z.string().min(1),
+  MAPBOX_SECRET_TOKEN: z.string().min(1),
+  INNGEST_EVENT_KEY: z.string().min(1),
+  INNGEST_SIGNING_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

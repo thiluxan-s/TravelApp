@@ -250,7 +250,7 @@ export default async function TripDetailPage({ params }) {
           {trip.destination && <p>{trip.destination}</p>}
         </div>
         <div className="flex gap-2">
-          <AddBookingDialog tripId={tripId} onUploadComplete={...} />
+          <AddBookingDialog tripId={tripId} />
           <DeleteTripButton tripId={tripId} />
         </div>
       </div>

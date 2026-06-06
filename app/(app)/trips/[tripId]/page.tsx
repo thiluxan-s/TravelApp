@@ -1,8 +1,14 @@
+// app/(app)/trips/[tripId]/page.tsx
 import { notFound, redirect } from 'next/navigation';
+import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import { getUserByClerkId } from '@/lib/db/repositories/users';
 import { getTripWithBookings } from '@/lib/db/repositories/trips';
-import { TripDetailClient } from '@/components/trips/TripDetailClient';
+import { groupSegmentsByDay } from '@/lib/itinerary/group-by-day';
+import { ItineraryTimeline } from '@/components/itinerary/ItineraryTimeline';
+import { ParsingBanner } from '@/components/itinerary/ParsingBanner';
+import { AddBookingDialog } from '@/components/trips/AddBookingDialog';
+import { DeleteTripButton } from '@/components/trips/DeleteTripButton';
 
 export default async function TripDetailPage({
   params,
@@ -21,5 +27,36 @@ export default async function TripDetailPage({
   if (!trip) notFound();
   if (trip.userId !== user.id) notFound();
 
-  return <TripDetailClient tripId={tripId} initialData={trip} />;
+  const segments = trip.bookings.flatMap((b) => b.segments);
+  const dayGroups = groupSegmentsByDay(segments);
+
+  return (
+    <div>
+      {/* Page header */}
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <Link
+            href="/trips"
+            className="mb-1 block text-xs text-muted-foreground hover:text-foreground"
+          >
+            ← Your trips
+          </Link>
+          <h1 className="text-xl font-semibold">{trip.title}</h1>
+          {trip.destination && (
+            <p className="mt-0.5 text-sm text-muted-foreground">{trip.destination}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <AddBookingDialog tripId={tripId} />
+          <DeleteTripButton tripId={tripId} />
+        </div>
+      </div>
+
+      {/* Parsing banner */}
+      <ParsingBanner bookings={trip.bookings} />
+
+      {/* Itinerary */}
+      <ItineraryTimeline dayGroups={dayGroups} tripId={tripId} />
+    </div>
+  );
 }

@@ -1,11 +1,13 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 export function SegmentWrapper({
   segmentId,
   children,
 }: {
   segmentId: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   function handleMouseEnter() {
     window.dispatchEvent(

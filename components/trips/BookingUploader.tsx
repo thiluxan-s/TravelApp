@@ -160,7 +160,7 @@ export function BookingUploader({
         onDrop={(e) => { e.preventDefault(); setIsDragOver(false); handleFiles(e.dataTransfer.files); }}
         onClick={() => inputRef.current?.click()}
         onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
-        className={`border border-dashed rounded-md px-4 py-5 text-center cursor-pointer transition-colors ${
+        className={`border border-dashed rounded-md px-4 py-5 text-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           isDragOver
             ? 'border-foreground/50 bg-muted/50'
             : 'border-border hover:border-foreground/30 hover:bg-muted/20'

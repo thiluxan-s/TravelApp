@@ -146,8 +146,8 @@ export const parseBookingFunction = inngest.createFunction(
         if (bookingType === 'flight') {
           const data = extractionResult as FlightExtraction;
           const [startCoords, endCoords] = await Promise.all([
-            geocode(`${data.departure_airport_code} airport`),
-            geocode(`${data.arrival_airport_code} airport`),
+            geocode(data.departure_airport_label),
+            geocode(data.arrival_airport_label),
           ]);
           return {
             startLat: startCoords ? String(startCoords.lat) : null,

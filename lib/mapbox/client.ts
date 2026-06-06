@@ -9,7 +9,7 @@ type GeocodingResponse = {
 export async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
   try {
     const encoded = encodeURIComponent(query);
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json?access_token=${env.MAPBOX_SECRET_TOKEN}&limit=1`;
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json?access_token=${env.MAPBOX_SECRET_TOKEN}&types=poi,place&limit=1`;
     const response = await fetch(url);
     if (!response.ok) return null;
     const data = (await response.json()) as GeocodingResponse;

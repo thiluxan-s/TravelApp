@@ -2,15 +2,22 @@ import { DateTime } from 'luxon';
 import { FlightDetailsSchema } from '@/lib/ai/schemas/flight';
 import type { Segment } from '@/lib/db/schema';
 
+function fmt(dt: DateTime, pattern: string): string {
+  return dt.isValid ? dt.toFormat(pattern) : '—';
+}
+
 export function FlightCard({ segment }: { segment: Segment }) {
   const details = FlightDetailsSchema.safeParse(segment.details);
   const dep = DateTime.fromJSDate(segment.startTime, { zone: segment.startTimezone });
   const arr = DateTime.fromJSDate(segment.endTime, { zone: segment.endTimezone });
-  const durationMins = Math.round(arr.diff(dep, 'minutes').minutes);
-  const durationHours = Math.floor(durationMins / 60);
-  const durationRemMins = durationMins % 60;
+  const durationMins =
+    dep.isValid && arr.isValid ? Math.round(arr.diff(dep, 'minutes').minutes) : null;
   const durationStr =
-    durationRemMins > 0 ? `${durationHours}h ${durationRemMins}m` : `${durationHours}h`;
+    durationMins != null
+      ? durationMins % 60 > 0
+        ? `${Math.floor(durationMins / 60)}h ${durationMins % 60}m`
+        : `${Math.floor(durationMins / 60)}h`
+      : '—';
 
   if (!details.success) {
     return (
@@ -37,8 +44,8 @@ export function FlightCard({ segment }: { segment: Segment }) {
       <div className="mb-3 flex items-center">
         <div className="text-center">
           <div className="text-3xl font-bold tracking-tight">{d.departure_airport_code}</div>
-          <div className="mt-0.5 text-xs text-muted-foreground">{dep.toFormat('HH:mm')}</div>
-          <div className="text-xs text-muted-foreground">{dep.toFormat('EEE MMM d')}</div>
+          <div className="mt-0.5 text-xs text-muted-foreground">{fmt(dep, 'HH:mm')}</div>
+          <div className="text-xs text-muted-foreground">{fmt(dep, 'EEE MMM d')}</div>
         </div>
         <div className="relative flex flex-1 flex-col items-center px-3">
           <div className="mb-1 text-xs text-muted-foreground">{durationStr}</div>
@@ -49,8 +56,8 @@ export function FlightCard({ segment }: { segment: Segment }) {
         </div>
         <div className="text-center">
           <div className="text-3xl font-bold tracking-tight">{d.arrival_airport_code}</div>
-          <div className="mt-0.5 text-xs text-muted-foreground">{arr.toFormat('HH:mm')}</div>
-          <div className="text-xs text-muted-foreground">{arr.toFormat('EEE MMM d')}</div>
+          <div className="mt-0.5 text-xs text-muted-foreground">{fmt(arr, 'HH:mm')}</div>
+          <div className="text-xs text-muted-foreground">{fmt(arr, 'EEE MMM d')}</div>
         </div>
       </div>
 

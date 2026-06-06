@@ -2,6 +2,7 @@ import type { DayGroup } from '@/lib/itinerary/types';
 import { FlightCard } from './FlightCard';
 import { HotelCard } from './HotelCard';
 import { AnnotationPill } from './AnnotationPill';
+import { SegmentWrapper } from './SegmentWrapper';
 
 export function DaySection({ day }: { day: DayGroup }) {
   return (
@@ -11,11 +12,13 @@ export function DaySection({ day }: { day: DayGroup }) {
       </h2>
       {day.segments.map((segment, i) => (
         <div key={segment.id}>
-          {segment.type === 'flight' ? (
-            <FlightCard segment={segment} />
-          ) : (
-            <HotelCard segment={segment} />
-          )}
+          <SegmentWrapper segmentId={segment.id}>
+            {segment.type === 'flight' ? (
+              <FlightCard segment={segment} />
+            ) : (
+              <HotelCard segment={segment} />
+            )}
+          </SegmentWrapper>
           {day.annotations[i] && <AnnotationPill annotation={day.annotations[i]!} />}
         </div>
       ))}

@@ -70,7 +70,7 @@ export default function Image() {
           <div
             style={{
               color: '#c4914a',
-              fontSize: 14,
+              fontSize: 11,
               fontWeight: 600,
               letterSpacing: '0.2em',
               textTransform: 'uppercase',
@@ -82,7 +82,7 @@ export default function Image() {
           <div
             style={{
               color: '#e4ded4',
-              fontSize: 64,
+              fontSize: 56,
               fontWeight: 700,
               lineHeight: 1.15,
               marginBottom: 20,

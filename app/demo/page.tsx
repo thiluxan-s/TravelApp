@@ -1,10 +1,17 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { getTripWithBookings } from '@/lib/db/repositories/trips';
 import { groupSegmentsByDay } from '@/lib/itinerary/group-by-day';
 import { ItineraryTimeline } from '@/components/itinerary/ItineraryTimeline';
 import { MapPanel } from '@/components/itinerary/MapPanel';
 import { env } from '@/lib/env.server';
+
+export const metadata: Metadata = {
+  title: 'Demo',
+  description:
+    'See how Wayfare turns booking confirmations into a unified itinerary. Tokyo, March 2026.',
+};
 
 export default async function DemoPage() {
   const trip = await getTripWithBookings(env.DEMO_TRIP_ID);

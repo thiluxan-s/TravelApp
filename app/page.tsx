@@ -1,5 +1,12 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
+
+export const metadata: Metadata = {
+  title: 'Wayfare',
+  description:
+    'Upload your booking PDFs and see your trip come together — flights, hotels, and map in one view.',
+};
 
 export default function LandingPage() {
   return (

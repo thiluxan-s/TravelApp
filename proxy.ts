@@ -8,6 +8,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/inngest',
   '/demo',
   '/opengraph-image',
+  '/icon',
+  '/apple-icon',
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

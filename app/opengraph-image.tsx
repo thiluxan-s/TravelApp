@@ -77,7 +77,7 @@ export default function Image() {
               marginBottom: 24,
             }}
           >
-            ✦ Wayfare
+            WAYFARE
           </div>
           <div
             style={{

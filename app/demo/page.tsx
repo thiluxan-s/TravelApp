@@ -64,7 +64,7 @@ export default async function DemoPage() {
             <ItineraryTimeline dayGroups={dayGroups} tripId={trip.id} />
           </div>
           {segments.length > 0 && days.length > 0 && (
-            <div className="mt-6 lg:sticky lg:top-6 lg:mt-0 lg:h-[calc(100vh-8rem)]">
+            <div className="mt-6 h-64 lg:sticky lg:top-6 lg:mt-0 lg:h-[calc(100vh-8rem)]">
               <MapPanel segments={segments} days={days} />
             </div>
           )}

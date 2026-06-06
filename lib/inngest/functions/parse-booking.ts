@@ -32,6 +32,11 @@ export const parseBookingFunction = inngest.createFunction(
 
         const fileUrl = await getPresignedGetUrl(booking.fileKey);
 
+        const fileContent: Anthropic.MessageParam['content'][number] =
+          booking.mimeType === 'application/pdf'
+            ? { type: 'document', source: { type: 'url', url: fileUrl } }
+            : { type: 'image', source: { type: 'url', url: fileUrl } };
+
         const message = await anthropic.messages.create({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 10,
@@ -40,7 +45,7 @@ export const parseBookingFunction = inngest.createFunction(
             {
               role: 'user',
               content: [
-                { type: 'document', source: { type: 'url', url: fileUrl } },
+                fileContent,
                 { type: 'text', text: classifierUserPrompt(booking.fileName) },
               ],
             },
@@ -86,6 +91,11 @@ export const parseBookingFunction = inngest.createFunction(
 
         const inputSchema = schema.toJSONSchema() as Anthropic.Tool['input_schema'];
 
+        const fileContent: Anthropic.MessageParam['content'][number] =
+          booking.mimeType === 'application/pdf'
+            ? { type: 'document', source: { type: 'url', url: fileUrl } }
+            : { type: 'image', source: { type: 'url', url: fileUrl } };
+
         const message = await anthropic.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 1024,
@@ -96,7 +106,7 @@ export const parseBookingFunction = inngest.createFunction(
             {
               role: 'user',
               content: [
-                { type: 'document', source: { type: 'url', url: fileUrl } },
+                fileContent,
                 { type: 'text', text: userPrompt },
               ],
             },

@@ -242,6 +242,9 @@ export default function LandingPage() {
               <Button render={<Link href="/sign-up" />} className="lp-btn-primary" size="lg">
                 Start for free
               </Button>
+              <Button render={<Link href="/demo" />} className="lp-btn-ghost" size="lg">
+                See a live demo →
+              </Button>
               <Button render={<Link href="/sign-in" />} className="lp-btn-ghost" size="lg">
                 Sign in →
               </Button>

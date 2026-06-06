@@ -13,6 +13,7 @@ const envSchema = z.object({
   MAPBOX_SECRET_TOKEN: z.string().min(1),
   INNGEST_EVENT_KEY: z.string().min(1),
   INNGEST_SIGNING_KEY: z.string().optional(),
+  DEMO_TRIP_ID: z.string().uuid(),
 });
 
 export const env = envSchema.parse(process.env);

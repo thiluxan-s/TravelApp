@@ -57,29 +57,29 @@ export function TripMap({ segments }: { segments: Segment[] }) {
 
       if (seg.type === 'flight') {
         if (startLat != null && startLng != null) {
-          const el = makeMarkerEl('flight');
-          const marker = new mapboxgl.Marker({ element: el })
+          const { container, dot } = makeMarkerEl('flight');
+          const marker = new mapboxgl.Marker({ element: container })
             .setLngLat([startLng, startLat])
             .addTo(m);
-          markersRef.current.set(`${seg.id}::start`, { marker, el });
+          markersRef.current.set(`${seg.id}::start`, { marker, el: dot });
           coords.push([startLng, startLat]);
         }
         if (endLat != null && endLng != null) {
-          const el = makeMarkerEl('flight');
-          const marker = new mapboxgl.Marker({ element: el })
+          const { container, dot } = makeMarkerEl('flight');
+          const marker = new mapboxgl.Marker({ element: container })
             .setLngLat([endLng, endLat])
             .addTo(m);
-          markersRef.current.set(`${seg.id}::end`, { marker, el });
+          markersRef.current.set(`${seg.id}::end`, { marker, el: dot });
           coords.push([endLng, endLat]);
         }
       } else {
         // hotel_stay: single pin at startLat/startLng
         if (startLat != null && startLng != null) {
-          const el = makeMarkerEl('hotel');
-          const marker = new mapboxgl.Marker({ element: el })
+          const { container, dot } = makeMarkerEl('hotel');
+          const marker = new mapboxgl.Marker({ element: container })
             .setLngLat([startLng, startLat])
             .addTo(m);
-          markersRef.current.set(`${seg.id}::hotel`, { marker, el });
+          markersRef.current.set(`${seg.id}::hotel`, { marker, el: dot });
           coords.push([startLng, startLat]);
         }
       }
@@ -157,9 +157,13 @@ export function TripMap({ segments }: { segments: Segment[] }) {
   );
 }
 
-function makeMarkerEl(type: 'flight' | 'hotel'): HTMLElement {
-  const el = document.createElement('div');
-  el.style.cssText = [
+function makeMarkerEl(type: 'flight' | 'hotel'): { container: HTMLElement; dot: HTMLElement } {
+  // container: Mapbox owns its transform for positioning — never touch it
+  const container = document.createElement('div');
+  container.style.cssText = 'width:14px;height:14px;display:flex;align-items:center;justify-content:center;';
+  // dot: we own its transform for hover scaling
+  const dot = document.createElement('div');
+  dot.style.cssText = [
     'width: 14px',
     'height: 14px',
     'border-radius: 50%',
@@ -168,5 +172,6 @@ function makeMarkerEl(type: 'flight' | 'hotel'): HTMLElement {
     'transition: transform 150ms ease, box-shadow 150ms ease',
     'cursor: default',
   ].join(';');
-  return el;
+  container.appendChild(dot);
+  return { container, dot };
 }

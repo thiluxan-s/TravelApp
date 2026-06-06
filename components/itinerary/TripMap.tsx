@@ -139,7 +139,9 @@ export function TripMap({ segments }: { segments: Segment[] }) {
     return () => window.removeEventListener('segment-hover', handleHover);
   }, []);
 
-  const hasCoords = segments.some((s) => s.startLat != null || s.endLat != null);
+  const hasCoords = segments.some(
+    (s) => (s.startLat != null && s.startLng != null) || (s.endLat != null && s.endLng != null),
+  );
 
   return (
     <div className="relative h-full min-h-[400px] overflow-hidden rounded-lg border border-border">

@@ -7,6 +7,7 @@ import { getTripWithBookings } from '@/lib/db/repositories/trips';
 import { groupSegmentsByDay } from '@/lib/itinerary/group-by-day';
 import { ItineraryTimeline } from '@/components/itinerary/ItineraryTimeline';
 import { ParsingBanner } from '@/components/itinerary/ParsingBanner';
+import { MapPanel } from '@/components/itinerary/MapPanel';
 import { AddBookingDialog } from '@/components/trips/AddBookingDialog';
 import { DeleteTripButton } from '@/components/trips/DeleteTripButton';
 
@@ -29,6 +30,7 @@ export default async function TripDetailPage({
 
   const segments = trip.bookings.flatMap((b) => b.segments);
   const dayGroups = groupSegmentsByDay(segments);
+  const days = dayGroups.map((d) => ({ date: d.date, label: d.label }));
 
   return (
     <div>
@@ -55,8 +57,17 @@ export default async function TripDetailPage({
       {/* Parsing banner */}
       <ParsingBanner bookings={trip.bookings} />
 
-      {/* Itinerary */}
-      <ItineraryTimeline dayGroups={dayGroups} tripId={tripId} />
+      {/* Itinerary + Map */}
+      <div className="lg:grid lg:grid-cols-[3fr_2fr] lg:gap-6">
+        <div>
+          <ItineraryTimeline dayGroups={dayGroups} tripId={tripId} />
+        </div>
+        {segments.length > 0 && days.length > 0 && (
+          <div className="mt-6 lg:sticky lg:top-6 lg:mt-0 lg:h-[calc(100vh-8rem)]">
+            <MapPanel segments={segments} days={days} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

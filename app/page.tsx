@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
   title: 'Wayfare',
@@ -123,6 +122,10 @@ export default function LandingPage() {
         }
 
         .lp-btn-primary {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          text-decoration: none !important;
           background: #C4914A !important;
           color: #09090C !important;
           border-radius: 3px !important;
@@ -141,6 +144,10 @@ export default function LandingPage() {
         }
 
         .lp-btn-ghost {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          text-decoration: none !important;
           background: transparent !important;
           color: #857C6F !important;
           border: 1px solid rgba(196, 145, 74, 0.18) !important;
@@ -214,12 +221,12 @@ export default function LandingPage() {
         >
           <span className="lp-nav-wordmark">Wayfare</span>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <Button render={<Link href="/sign-in" />} className="lp-btn-ghost" size="sm">
+            <Link href="/sign-in" className="lp-btn-ghost">
               Sign in
-            </Button>
-            <Button render={<Link href="/sign-up" />} className="lp-btn-primary" size="sm">
+            </Link>
+            <Link href="/sign-up" className="lp-btn-primary">
               Get started
-            </Button>
+            </Link>
           </div>
         </nav>
 
@@ -247,15 +254,15 @@ export default function LandingPage() {
             </p>
 
             <div className="fu fu-5" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <Button render={<Link href="/sign-up" />} className="lp-btn-primary" size="lg">
+              <Link href="/sign-up" className="lp-btn-primary">
                 Start for free
-              </Button>
-              <Button render={<Link href="/demo" />} className="lp-btn-ghost" size="lg">
+              </Link>
+              <Link href="/demo" className="lp-btn-ghost">
                 See a live demo →
-              </Button>
-              <Button render={<Link href="/sign-in" />} className="lp-btn-ghost" size="lg">
+              </Link>
+              <Link href="/sign-in" className="lp-btn-ghost">
                 Sign in →
-              </Button>
+              </Link>
             </div>
           </div>
         </main>

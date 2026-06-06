@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { getTripWithBookings } from '@/lib/db/repositories/trips';
 import { groupSegmentsByDay } from '@/lib/itinerary/group-by-day';
 import { ItineraryTimeline } from '@/components/itinerary/ItineraryTimeline';
@@ -38,9 +38,9 @@ export default async function DemoPage() {
           <Link href="/" className="text-lg font-semibold tracking-tight">
             Wayfare
           </Link>
-          <Button render={<Link href="/sign-up" />} size="sm">
+          <Link href="/sign-up" className={buttonVariants({ size: 'sm' })}>
             Sign up free
-          </Button>
+          </Link>
         </div>
       </header>
 
@@ -78,9 +78,9 @@ export default async function DemoPage() {
               Upload your own bookings and build your itinerary in minutes.
             </p>
           </div>
-          <Button render={<Link href="/sign-up" />}>
+          <Link href="/sign-up" className={buttonVariants()}>
             Create your own trip →
-          </Button>
+          </Link>
         </div>
       </main>
     </div>

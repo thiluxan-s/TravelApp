@@ -33,7 +33,7 @@ export default async function AppLayout({
           <UserButton />
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>
+      <main className="max-w-6xl mx-auto px-4 py-8" id="main-content">{children}</main>
     </div>
   );
 }

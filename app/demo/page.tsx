@@ -44,7 +44,7 @@ export default async function DemoPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-8" id="main-content">
         {/* Trip header */}
         <div className="mb-6">
           <div className="mb-1 flex items-center gap-2">

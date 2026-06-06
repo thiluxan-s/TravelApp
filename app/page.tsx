@@ -226,6 +226,7 @@ export default function LandingPage() {
         {/* Hero */}
         <main
           className="relative z-10 flex-1 flex items-center"
+          id="main-content"
           style={{ padding: '3rem 2.5rem 4rem' }}
         >
           <div style={{ maxWidth: '860px' }}>

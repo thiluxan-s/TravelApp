@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Wayfare',
@@ -7,7 +9,9 @@ export const metadata: Metadata = {
     'Upload your booking PDFs and see your trip come together — flights, hotels, and map in one view.',
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const { userId } = await auth();
+  if (userId) redirect('/trips');
   return (
     <>
       <style>{`

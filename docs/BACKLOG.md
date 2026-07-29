@@ -33,13 +33,21 @@ Full write-up, plus the smaller deferred items from the same review: `docs/super
 
 ## Portfolio-facing
 
-### The README is stale
+### README screenshots
 
-`README.md` still lists Phases 2–5 under "Roadmap / Phases remaining" — all six shipped — and the live demo link is the placeholder `https://wayfare-xxx.vercel.app`.
+The README has a Screenshots section holding only an HTML comment. `docs/PRD.md` makes "The README sells it" a success criterion and names screenshots as part of it — this is the last piece of that criterion still outstanding, and the only visual hook a recruiter gets in the first ninety seconds.
 
-`docs/PRD.md` names the README as the most-read artifact in the project and makes "The README sells it" a success criterion: architecture diagram, screenshots, design decisions, a "what I'd build next" roadmap, and a working demo link. None of that is true today.
+Three shots, to be dropped in `docs/images/` and the placeholder comment replaced with image tags:
 
-Cheapest high-impact fix on this list. It is documentation rather than a feature, which is why it keeps getting deferred — but it is now three phases out of date.
+1. `itinerary.png` — trip detail page, timeline and map side by side, with an annotation pill visible between two events. The money shot.
+2. `parsing.png` — mid-upload: the amber parsing banner with a booking in flight.
+3. `failure.png` — a failed parse: red banner plus the bookings panel showing the error and the Try again / Remove controls.
+
+The seeded demo trip at `/demo` covers shot 1. Shots 2 and 3 need a real upload against a local dev server — 3 is easiest to stage by uploading any non-booking PDF, which the classifier rejects.
+
+**Take these before Phase 7C.** 7B is a pure refactor with no visual change, but 7C adds train and reservation cards — screenshot after it and the itinerary looks richer, rather than needing a reshoot.
+
+*(The rest of the README was rewritten 2026-07-29 and the demo link now points at the deployed app, so only the screenshots remain.)*
 
 ### Demo video
 

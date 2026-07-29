@@ -3,9 +3,15 @@
 import { auth } from '@clerk/nextjs/server';
 import { getUserByClerkId } from '@/lib/db/repositories/users';
 import { getTripById, getTripWithBookings, type TripWithBookings } from '@/lib/db/repositories/trips';
-import { createBooking, getBookingById, updateBookingStatus } from '@/lib/db/repositories/bookings';
+import {
+  createBooking,
+  getBookingById,
+  updateBookingStatus,
+  deleteBookingById,
+} from '@/lib/db/repositories/bookings';
+import { deleteSegmentsByBookingId } from '@/lib/db/repositories/segments';
 import { inngest } from '@/lib/inngest/client';
-import { getPresignedUploadUrl } from '@/lib/r2';
+import { getPresignedUploadUrl, deleteObject } from '@/lib/r2';
 import { db } from '@/lib/db';
 import { bookings } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -116,6 +122,71 @@ export async function confirmBookingUploadedAction(
       await inngest.send({ name: 'booking/uploaded', data: { bookingId } });
     } catch {
       await updateBookingStatus(bookingId, 'parsing_failed');
+      return { ok: false, error: 'Failed to queue document for parsing' };
+    }
+
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Something went wrong' };
+  }
+}
+
+export async function deleteBookingAction(
+  bookingId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { ok: false, error: 'Unauthorized' };
+
+    const booking = await getBookingById(bookingId);
+    if (!booking) return { ok: false, error: 'Booking not found' };
+
+    const trip = await getTripById(booking.tripId);
+    if (!trip || trip.userId !== user.id) return { ok: false, error: 'Forbidden' };
+
+    // Best-effort: a missing R2 object shouldn't block deleting the row.
+    if (booking.fileKey !== '') {
+      await Promise.allSettled([deleteObject(booking.fileKey)]);
+    }
+
+    await deleteBookingById(bookingId);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Something went wrong' };
+  }
+}
+
+export async function retryBookingParseAction(
+  bookingId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { ok: false, error: 'Unauthorized' };
+
+    const booking = await getBookingById(bookingId);
+    if (!booking) return { ok: false, error: 'Booking not found' };
+
+    const trip = await getTripById(booking.tripId);
+    if (!trip || trip.userId !== user.id) return { ok: false, error: 'Forbidden' };
+
+    if (booking.status !== 'parsing_failed') {
+      return { ok: false, error: 'Only failed bookings can be retried' };
+    }
+
+    // parse-booking's write step short-circuits when a segment already exists
+    // (it guards Inngest's own retries). Clear them so a manual retry actually
+    // re-writes instead of silently no-opping.
+    await deleteSegmentsByBookingId(bookingId);
+
+    // updateBookingStatus resets parseError to null when no extra is passed.
+    await updateBookingStatus(bookingId, 'parsing');
+
+    try {
+      await inngest.send({ name: 'booking/uploaded', data: { bookingId } });
+    } catch {
+      await updateBookingStatus(bookingId, 'parsing_failed', {
+        parseError: 'We could not queue this document for another attempt.',
+      });
       return { ok: false, error: 'Failed to queue document for parsing' };
     }
 

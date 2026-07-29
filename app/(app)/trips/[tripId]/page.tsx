@@ -10,6 +10,7 @@ import { ParsingBanner } from '@/components/itinerary/ParsingBanner';
 import { MapPanel } from '@/components/itinerary/MapPanel';
 import { AddBookingDialog } from '@/components/trips/AddBookingDialog';
 import { DeleteTripButton } from '@/components/trips/DeleteTripButton';
+import { BookingsPanel } from '@/components/trips/BookingsPanel';
 
 export default async function TripDetailPage({
   params,
@@ -68,6 +69,8 @@ export default async function TripDetailPage({
           </div>
         )}
       </div>
+
+      <BookingsPanel bookings={trip.bookings} />
     </div>
   );
 }

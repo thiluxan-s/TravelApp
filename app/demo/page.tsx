@@ -61,7 +61,7 @@ export default async function DemoPage() {
         {/* Itinerary + Map */}
         <div className="lg:grid lg:grid-cols-[3fr_2fr] lg:gap-6">
           <div>
-            <ItineraryTimeline dayGroups={dayGroups} tripId={trip.id} />
+            <ItineraryTimeline dayGroups={dayGroups} tripId={trip.id} bookings={trip.bookings} />
           </div>
           {segments.length > 0 && days.length > 0 && (
             <div className="mt-6 h-64 lg:sticky lg:top-6 lg:mt-0 lg:h-[calc(100vh-8rem)]">

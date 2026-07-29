@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Booking, Segment } from '@/lib/db/schema';
 import { FlightDetailsSchema } from '@/lib/ai/schemas/flight';
 import { HotelDetailsSchema } from '@/lib/ai/schemas/hotel';
@@ -5,6 +6,7 @@ import { HotelDetailsSchema } from '@/lib/ai/schemas/hotel';
 type Props = {
   booking: Booking;
   segment?: Segment;
+  actions?: ReactNode;
 };
 
 const typeIcon: Record<string, string> = {
@@ -31,7 +33,7 @@ function formatLocalTime(utcDate: Date, timezone: string): string {
   }).format(utcDate);
 }
 
-export function BookingCard({ booking, segment }: Props) {
+export function BookingCard({ booking, segment, actions }: Props) {
   const icon = typeIcon[booking.type] ?? '📄';
 
   return (
@@ -48,6 +50,8 @@ export function BookingCard({ booking, segment }: Props) {
         <p className="text-sm font-medium truncate">{booking.fileName}</p>
         <StatusLine booking={booking} segment={segment} />
       </div>
+
+      {actions}
     </div>
   );
 }

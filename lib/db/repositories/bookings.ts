@@ -51,3 +51,7 @@ export async function updateBooking(
     .set({ ...data, updatedAt: new Date() })
     .where(eq(bookings.id, id));
 }
+
+export async function deleteBookingById(id: string): Promise<void> {
+  await db.delete(bookings).where(eq(bookings.id, id));
+}

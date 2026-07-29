@@ -10,6 +10,7 @@ import { ParsingBanner } from '@/components/itinerary/ParsingBanner';
 import { MapPanel } from '@/components/itinerary/MapPanel';
 import { AddBookingDialog } from '@/components/trips/AddBookingDialog';
 import { DeleteTripButton } from '@/components/trips/DeleteTripButton';
+import { BookingsPanel } from '@/components/trips/BookingsPanel';
 
 export default async function TripDetailPage({
   params,
@@ -60,7 +61,7 @@ export default async function TripDetailPage({
       {/* Itinerary + Map */}
       <div className="lg:grid lg:grid-cols-[3fr_2fr] lg:gap-6">
         <div>
-          <ItineraryTimeline dayGroups={dayGroups} tripId={tripId} />
+          <ItineraryTimeline dayGroups={dayGroups} tripId={tripId} bookings={trip.bookings} />
         </div>
         {segments.length > 0 && days.length > 0 && (
           <div className="mt-6 h-64 lg:sticky lg:top-6 lg:mt-0 lg:h-[calc(100vh-8rem)]">
@@ -68,6 +69,8 @@ export default async function TripDetailPage({
           </div>
         )}
       </div>
+
+      <BookingsPanel bookings={trip.bookings} />
     </div>
   );
 }

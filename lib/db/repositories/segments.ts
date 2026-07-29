@@ -22,3 +22,7 @@ export async function segmentExistsForBooking(bookingId: string): Promise<boolea
   });
   return result !== undefined;
 }
+
+export async function deleteSegmentsByBookingId(bookingId: string): Promise<void> {
+  await db.delete(segments).where(eq(segments.bookingId, bookingId));
+}

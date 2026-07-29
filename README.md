@@ -4,7 +4,7 @@
 
 Booking confirmations arrive scattered: a flight in Gmail, a hotel PDF on your phone, a screenshot of something else. Reassembling "what am I doing Tuesday?" means hunting through three apps at exactly the moment you least want to. Wayfare is the place to put them.
 
-**[Live demo →](https://REPLACE-ME.vercel.app/demo)** — a pre-seeded Tokyo trip, no sign-up needed.
+**[Live demo →](https://travel-app-mu-pearl.vercel.app/demo)** — a pre-seeded Tokyo trip, no sign-up needed.
 
 ---
 

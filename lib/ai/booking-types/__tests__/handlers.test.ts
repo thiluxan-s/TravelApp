@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { flightHandler } from '../flight';
+import { hotelHandler } from '../hotel';
 
 const validFlight = {
   flight_number: 'AC001',
@@ -80,5 +81,75 @@ describe('flightHandler', () => {
   it('validates raw tool input', () => {
     expect(flightHandler.isValidExtraction(validFlight)).toBe(true);
     expect(flightHandler.isValidExtraction({ nonsense: true })).toBe(false);
+  });
+});
+
+const validHotel = {
+  hotel_name: 'Park Hotel Tokyo',
+  address: '1-7-1 Higashi-Shimbashi, Minato-ku, Tokyo',
+  confirmation_code: 'HTL789',
+  room_type: 'Deluxe King',
+  guests: 2,
+  check_in_time: '15:00',
+  check_out_time: '11:00',
+  phone: '+81-3-6252-1111',
+  check_in_iso: '2026-03-11T15:00:00+09:00',
+  check_out_iso: '2026-03-14T11:00:00+09:00',
+  timezone: 'Asia/Tokyo',
+};
+
+const hotelCoords = {
+  startLat: '35.661900',
+  startLng: '139.759400',
+  endLat: '35.661900',
+  endLng: '139.759400',
+};
+
+describe('hotelHandler', () => {
+  it('declares its booking type, segment type, and tool name', () => {
+    expect(hotelHandler.bookingType).toBe('hotel');
+    expect(hotelHandler.segmentType).toBe('hotel_stay');
+    expect(hotelHandler.toolName).toBe('record_hotel_booking');
+  });
+
+  it('geocodes the same address for both endpoints', () => {
+    const targets = hotelHandler.geocodeTargets(validHotel);
+    expect(targets).toEqual({
+      start: '1-7-1 Higashi-Shimbashi, Minato-ku, Tokyo',
+      end: '1-7-1 Higashi-Shimbashi, Minato-ku, Tokyo',
+    });
+    expect(targets!.start).toBe(targets!.end);
+  });
+
+  it('maps check-in and check-out onto segment start and end', () => {
+    const fields = hotelHandler.toSegmentFields(validHotel, hotelCoords);
+    expect(fields).not.toBeNull();
+    expect(fields!.type).toBe('hotel_stay');
+    expect(fields!.startTime).toEqual(new Date('2026-03-11T15:00:00+09:00'));
+    expect(fields!.endTime).toEqual(new Date('2026-03-14T11:00:00+09:00'));
+    expect(fields!.startTimezone).toBe('Asia/Tokyo');
+    expect(fields!.endTimezone).toBe('Asia/Tokyo');
+    expect(fields!.startLocation).toBe('1-7-1 Higashi-Shimbashi, Minato-ku, Tokyo');
+    expect(fields!.endLocation).toBe('1-7-1 Higashi-Shimbashi, Minato-ku, Tokyo');
+  });
+
+  it('strips extraction-only fields out of the stored details', () => {
+    const fields = hotelHandler.toSegmentFields(validHotel, hotelCoords);
+    expect(fields!.details).toEqual({
+      hotel_name: 'Park Hotel Tokyo',
+      address: '1-7-1 Higashi-Shimbashi, Minato-ku, Tokyo',
+      confirmation_code: 'HTL789',
+      room_type: 'Deluxe King',
+      guests: 2,
+      check_in_time: '15:00',
+      check_out_time: '11:00',
+      phone: '+81-3-6252-1111',
+    });
+  });
+
+  it('returns null for data that does not match the schema', () => {
+    expect(hotelHandler.geocodeTargets({ nonsense: true })).toBeNull();
+    expect(hotelHandler.toSegmentFields({ nonsense: true }, hotelCoords)).toBeNull();
+    expect(hotelHandler.isValidExtraction({ nonsense: true })).toBe(false);
   });
 });

@@ -75,6 +75,54 @@ describe('groupSegmentsByDay', () => {
     expect(result[1].date).toBe('2026-03-12');
   });
 
+  it('sorts segments within a day chronologically regardless of input order', () => {
+    // Mirrors the real failure: a hotel uploaded first, then an earlier flight.
+    // The page flattens segments in booking-creation order, not start-time order.
+    const hotel = makeSegment({
+      id: 'hotel',
+      type: 'hotel_stay',
+      startTime: new Date('2026-03-10T15:00:00Z'),
+      endTime: new Date('2026-03-13T11:00:00Z'),
+      startTimezone: 'UTC',
+      endTimezone: 'UTC',
+    });
+    const flight = makeSegment({
+      id: 'flight',
+      type: 'flight',
+      startTime: new Date('2026-03-10T08:00:00Z'),
+      endTime: new Date('2026-03-10T12:00:00Z'),
+      startTimezone: 'UTC',
+      endTimezone: 'UTC',
+    });
+
+    const result = groupSegmentsByDay([hotel, flight]);
+
+    expect(result[0].segments.map((s) => s.id)).toEqual(['flight', 'hotel']);
+  });
+
+  it('does not report a conflict for non-overlapping segments given out-of-order input', () => {
+    const hotel = makeSegment({
+      id: 'hotel',
+      type: 'hotel_stay',
+      startTime: new Date('2026-03-10T15:00:00Z'),
+      endTime: new Date('2026-03-13T11:00:00Z'),
+      startTimezone: 'UTC',
+      endTimezone: 'UTC',
+    });
+    const flight = makeSegment({
+      id: 'flight',
+      type: 'flight',
+      startTime: new Date('2026-03-10T08:00:00Z'),
+      endTime: new Date('2026-03-10T12:00:00Z'),
+      startTimezone: 'UTC',
+      endTimezone: 'UTC',
+    });
+
+    const result = groupSegmentsByDay([hotel, flight]);
+
+    expect(result[0].annotations[0].kind).toBe('gap');
+  });
+
   it('formats the day label in the correct timezone', () => {
     // 2026-03-10 is a Tuesday
     const seg = makeSegment({

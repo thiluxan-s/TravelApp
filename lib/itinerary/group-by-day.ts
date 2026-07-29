@@ -23,7 +23,13 @@ export function groupSegmentsByDay(segments: Segment[]): DayGroup[] {
   const sortedDates = [...dayMap.keys()].sort();
 
   return sortedDates.map((date) => {
-    const segs = dayMap.get(date)!;
+    // Callers flatten segments in booking-creation order, so sort within the day
+    // before pairing — otherwise adjacent pairs come out reversed and
+    // computeAnnotations reports a false overlap conflict.
+    const segs = dayMap
+      .get(date)!
+      .slice()
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
     const label = DateTime.fromISO(date, { zone: segs[0].startTimezone }).toFormat(
       'cccc, MMMM d',
     );

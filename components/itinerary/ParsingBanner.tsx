@@ -22,6 +22,9 @@ export function ParsingBanner({ bookings }: { bookings: Booking[] }) {
         <span className="block h-3 w-3 flex-shrink-0 animate-spin rounded-full border-2 border-amber-500/30 border-t-amber-500" />
         Parsing {inFlight} booking{inFlight > 1 ? 's' : ''}… results will appear
         automatically
+        {failed > 0 && (
+          <span> · {failed} couldn&apos;t be read</span>
+        )}
       </div>
     );
   }

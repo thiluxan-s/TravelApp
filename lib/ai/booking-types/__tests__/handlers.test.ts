@@ -230,6 +230,14 @@ describe('trainHandler', () => {
   it('returns null for data that does not match the schema', () => {
     expect(trainHandler.geocodeTargets({ nonsense: true })).toBeNull();
     expect(trainHandler.toSegmentFields({ nonsense: true }, coords)).toBeNull();
-    expect(trainHandler.validateExtraction({ nonsense: true }).ok).toBe(false);
+    const validation = trainHandler.validateExtraction({ nonsense: true });
+    expect(validation.ok).toBe(false);
+    if (!validation.ok) {
+      expect(validation.error).toContain('train_number');
+    }
+  });
+
+  it('reports ok for a valid extraction', () => {
+    expect(trainHandler.validateExtraction(validTrain)).toEqual({ ok: true });
   });
 });

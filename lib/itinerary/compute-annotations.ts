@@ -3,6 +3,26 @@ import type { Segment } from '@/lib/db/schema';
 import type { Annotation } from './types';
 import { haversineKm } from './haversine';
 import { HotelDetailsSchema } from '@/lib/ai/schemas/hotel';
+import { ReservationDetailsSchema } from '@/lib/ai/schemas/reservation';
+
+/**
+ * Whether prev.endTime genuinely marks when this segment stops occupying the
+ * traveller, and can therefore support an overlap claim.
+ *
+ * A hotel_stay's endTime is checkout — often days after the day it is grouped
+ * under — so anything else that day would look like an overlap. A reservation's
+ * endTime may be a per-category estimate the handler derived because the
+ * document stated none; asserting a conflict from our own guess is worse than
+ * staying quiet.
+ */
+function hasAuthoritativeEnd(segment: Segment): boolean {
+  if (segment.type === 'hotel_stay') return false;
+  if (segment.type === 'reservation') {
+    const parsed = ReservationDetailsSchema.safeParse(segment.details);
+    return parsed.success ? !parsed.data.end_is_estimated : false;
+  }
+  return true;
+}
 
 export function computeAnnotations(prev: Segment, next: Segment): Annotation {
   const gapMinutes = Math.round(
@@ -20,8 +40,8 @@ export function computeAnnotations(prev: Segment, next: Segment): Annotation {
       ? haversineKm(prevLat, prevLng, nextLat, nextLng)
       : null;
 
-  // Conflict: time overlap
-  if (next.startTime < prev.endTime) {
+  // Conflict: time overlap — only when prev's end time is authoritative.
+  if (hasAuthoritativeEnd(prev) && next.startTime < prev.endTime) {
     return {
       kind: 'conflict',
       gapMinutes,

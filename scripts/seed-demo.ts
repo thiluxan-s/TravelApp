@@ -16,6 +16,8 @@ const sql = neon(process.env.DATABASE_URL!);
 const db = drizzle(sql, { schema });
 
 async function seed() {
+  const shouldReset = process.argv.includes('--reset');
+
   // ── 1. Upsert demo user ─────────────────────────────────────────────────────
   await db
     .insert(users)
@@ -27,13 +29,24 @@ async function seed() {
   });
   if (!demoUser) throw new Error('Failed to get/create demo user');
 
-  // ── 2. Skip if already seeded ───────────────────────────────────────────────
+  // ── 2. Skip if already seeded, unless --reset ────────────────────────────────
   const existingTrip = await db.query.trips.findFirst({
     where: eq(trips.id, DEMO_TRIP_ID),
   });
   if (existingTrip) {
-    console.log('✓ Demo data already seeded. Trip ID:', DEMO_TRIP_ID);
-    process.exit(0);
+    if (!shouldReset) {
+      console.log(
+        '✓ Demo data already seeded. Trip ID:',
+        DEMO_TRIP_ID,
+        '(pass --reset to re-seed)',
+      );
+      process.exit(0);
+    }
+
+    console.log('⚠ --reset: deleting existing demo trip and re-seeding');
+    // Bookings and segments cascade (onDelete: 'cascade' on both foreign keys),
+    // so deleting the trip row is sufficient.
+    await db.delete(trips).where(eq(trips.id, DEMO_TRIP_ID));
   }
 
   // ── 3. Trip ──────────────────────────────────────────────────────────────────
@@ -129,7 +142,179 @@ async function seed() {
     },
   });
 
-  // ── 6. Return flight NRT → YYZ ────────────────────────────────────────────────
+  // ── 6. Dinner reservation — Narisawa ─────────────────────────────────────────
+  const [dinnerBooking] = await db
+    .insert(bookings)
+    .values({
+      tripId: DEMO_TRIP_ID,
+      type: 'reservation',
+      status: 'parsed',
+      fileKey: 'demo/dinner-reservation.pdf',
+      fileName: 'dinner-reservation.pdf',
+      fileSizeBytes: 51200,
+      mimeType: 'application/pdf',
+    })
+    .returning();
+
+  if (!dinnerBooking) throw new Error('Failed to insert dinner reservation booking');
+
+  await db.insert(segments).values({
+    bookingId: dinnerBooking.id,
+    tripId: DEMO_TRIP_ID,
+    type: 'reservation',
+    startTime: new Date('2026-03-11T20:00:00+09:00'),
+    startTimezone: 'Asia/Tokyo',
+    endTime: new Date('2026-03-11T21:30:00+09:00'),
+    endTimezone: 'Asia/Tokyo',
+    startLocation: 'Narisawa',
+    startLat: '35.665500',
+    startLng: '139.712400',
+    endLocation: 'Narisawa',
+    endLat: '35.665500',
+    endLng: '139.712400',
+    details: {
+      name: 'Narisawa',
+      category: 'restaurant',
+      confirmation_code: 'RES88213',
+      party_size: 2,
+      address: '2-6-15 Minami Aoyama, Minato-ku, Tokyo 107-0062',
+      phone: '+81-3-5785-0799',
+      notes: 'Counter seating. Smart casual.',
+      end_is_estimated: true,
+    },
+  });
+
+  // ── 7. Shinkansen Tokyo → Kyoto ───────────────────────────────────────────────
+  const [shinkansenOutboundBooking] = await db
+    .insert(bookings)
+    .values({
+      tripId: DEMO_TRIP_ID,
+      type: 'train',
+      status: 'parsed',
+      fileKey: 'demo/shinkansen-outbound.pdf',
+      fileName: 'shinkansen-outbound.pdf',
+      fileSizeBytes: 40960,
+      mimeType: 'application/pdf',
+    })
+    .returning();
+
+  if (!shinkansenOutboundBooking) {
+    throw new Error('Failed to insert Shinkansen outbound booking');
+  }
+
+  await db.insert(segments).values({
+    bookingId: shinkansenOutboundBooking.id,
+    tripId: DEMO_TRIP_ID,
+    type: 'train_ride',
+    startTime: new Date('2026-03-13T09:00:00+09:00'),
+    startTimezone: 'Asia/Tokyo',
+    endTime: new Date('2026-03-13T11:15:00+09:00'),
+    endTimezone: 'Asia/Tokyo',
+    startLocation: 'Tokyo Station, Tokyo, Japan',
+    startLat: '35.681400',
+    startLng: '139.766600',
+    endLocation: 'Kyoto Station, Kyoto, Japan',
+    endLat: '34.985800',
+    endLng: '135.758600',
+    details: {
+      train_number: 'Nozomi 15',
+      operator: 'JR Central',
+      confirmation_code: 'JR552019',
+      departure_station: 'Tokyo',
+      arrival_station: 'Kyoto',
+      coach: '9',
+      seat: '11D',
+      travel_class: 'Green Car',
+    },
+  });
+
+  // ── 8. Attraction reservation — Kinkaku-ji ───────────────────────────────────
+  const [kinkakujiBooking] = await db
+    .insert(bookings)
+    .values({
+      tripId: DEMO_TRIP_ID,
+      type: 'reservation',
+      status: 'parsed',
+      fileKey: 'demo/kinkakuji-entry.pdf',
+      fileName: 'kinkakuji-entry.pdf',
+      fileSizeBytes: 40960,
+      mimeType: 'application/pdf',
+    })
+    .returning();
+
+  if (!kinkakujiBooking) throw new Error('Failed to insert Kinkaku-ji reservation booking');
+
+  await db.insert(segments).values({
+    bookingId: kinkakujiBooking.id,
+    tripId: DEMO_TRIP_ID,
+    type: 'reservation',
+    startTime: new Date('2026-03-13T12:30:00+09:00'),
+    startTimezone: 'Asia/Tokyo',
+    endTime: new Date('2026-03-13T14:00:00+09:00'),
+    endTimezone: 'Asia/Tokyo',
+    startLocation: 'Kinkaku-ji',
+    startLat: '35.039400',
+    startLng: '135.729200',
+    endLocation: 'Kinkaku-ji',
+    endLat: '35.039400',
+    endLng: '135.729200',
+    details: {
+      name: 'Kinkaku-ji (Golden Pavilion)',
+      category: 'attraction',
+      confirmation_code: 'KYO7741',
+      party_size: 2,
+      address: '1 Kinkakujicho, Kita Ward, Kyoto 603-8361',
+      phone: null,
+      notes: 'Timed entry. Arrive 10 minutes early.',
+      end_is_estimated: false,
+    },
+  });
+
+  // ── 9. Shinkansen Kyoto → Tokyo ───────────────────────────────────────────────
+  const [shinkansenReturnBooking] = await db
+    .insert(bookings)
+    .values({
+      tripId: DEMO_TRIP_ID,
+      type: 'train',
+      status: 'parsed',
+      fileKey: 'demo/shinkansen-return.pdf',
+      fileName: 'shinkansen-return.pdf',
+      fileSizeBytes: 40960,
+      mimeType: 'application/pdf',
+    })
+    .returning();
+
+  if (!shinkansenReturnBooking) {
+    throw new Error('Failed to insert Shinkansen return booking');
+  }
+
+  await db.insert(segments).values({
+    bookingId: shinkansenReturnBooking.id,
+    tripId: DEMO_TRIP_ID,
+    type: 'train_ride',
+    startTime: new Date('2026-03-13T18:30:00+09:00'),
+    startTimezone: 'Asia/Tokyo',
+    endTime: new Date('2026-03-13T20:45:00+09:00'),
+    endTimezone: 'Asia/Tokyo',
+    startLocation: 'Kyoto Station, Kyoto, Japan',
+    startLat: '34.985800',
+    startLng: '135.758600',
+    endLocation: 'Tokyo Station, Tokyo, Japan',
+    endLat: '35.681400',
+    endLng: '139.766600',
+    details: {
+      train_number: 'Nozomi 46',
+      operator: 'JR Central',
+      confirmation_code: 'JR552020',
+      departure_station: 'Kyoto',
+      arrival_station: 'Tokyo',
+      coach: '10',
+      seat: '7A',
+      travel_class: 'Green Car',
+    },
+  });
+
+  // ── 10. Return flight NRT → YYZ ───────────────────────────────────────────────
   const [returnBooking] = await db
     .insert(bookings)
     .values({

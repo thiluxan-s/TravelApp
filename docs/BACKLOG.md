@@ -8,16 +8,25 @@ Phase work itself lives in `docs/phases/` and `docs/superpowers/`. This file is 
 
 ## Blocking-ish
 
-### Runtime verification of Phase 7A has not happened
+### Runtime verification of Phases 7A and 7B has not happened
 
-Phase 7A (failure surface + recovery) shipped verified by typecheck, lint, and unit tests on its pure logic — but the browser pass was never run. It needs Clerk credentials, a live Neon database, and a genuinely failed parse, so it was deliberately left to a human rather than faked.
+Both phases shipped verified by typecheck, lint, and unit tests on their pure logic, but neither got a browser or end-to-end pass. Both need Clerk credentials, a live Neon database, and the Inngest dev server, so they were deliberately left to a human rather than faked. One session covers both.
 
-Still to confirm:
+Setup: `npm run dev` plus `npx inngest-cli@latest dev` (dashboard at `localhost:8288`).
+
+**Phase 7B — behavior preservation.** This is the one that matters most, because 7B's entire claim is that it changed nothing. Its unit tests cover the handlers, not the job that drives them, so this is the only proof:
+
+- A real **flight** PDF still classifies, extracts, geocodes, and lands on the timeline
+- A real **hotel** PDF does too — and check the Inngest dashboard shows **one** geocode call for it, not two. The hotel single-geocode behavior survived being made generic, but only a runtime check confirms it, and a regression there silently doubles Mapbox usage against a metered free tier.
+
+**Phase 7A — failure surface and recovery:**
 
 - Upload a non-booking PDF → red banner appears, bookings panel shows the error
 - "Try again" → status returns to `parsing`, the Inngest job re-runs
 - "Remove" → the row disappears and stays gone after a refresh
 - A **successful** upload still lands on the timeline — retry touches segment deletion, so the happy path needs a regression check
+
+Note while doing this: a transient failure will currently surface as a permanent one (see the next item), so if something reads "couldn't be read" mid-run, check the Inngest dashboard before concluding it actually failed.
 
 ### `parsing_failed` is written before Inngest has finished retrying
 

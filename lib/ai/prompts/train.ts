@@ -6,6 +6,8 @@ For departure_timezone and arrival_timezone: use IANA timezone identifiers, e.g.
 
 For departure_station_label and arrival_station_label: a geocodable station name including city and country, e.g. "Tokyo Station, Tokyo, Japan" or "Gare de Lyon, Paris, France". These are used for map lookup, so favour the full official station name over an abbreviation.
 
+For departure_station and arrival_station: the short display name a traveller would say out loud, e.g. "Tokyo", "Kyoto", "Gare de Lyon". Keep these brief — they are shown as the route headline. Do not repeat the city and country here; that belongs in the _label fields.
+
 For train_number: the service or train number as printed, e.g. "NZ 21", "TGV 6205", "Acela 2170".
 For operator: the rail company, e.g. "JR Central", "SNCF", "Amtrak".
 For travel_class: the fare class as printed, e.g. "Green Car", "First", "Standard Premier".

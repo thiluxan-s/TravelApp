@@ -6,18 +6,16 @@ import { geocode } from '@/lib/mapbox/client';
 import { getBookingById, updateBooking } from '@/lib/db/repositories/bookings';
 import { createSegment, segmentExistsForBooking } from '@/lib/db/repositories/segments';
 import { classifierSystemPrompt, classifierUserPrompt } from '@/lib/ai/prompts/classifier';
-import { flightSystemPrompt, flightUserPrompt } from '@/lib/ai/prompts/flight';
-import { hotelSystemPrompt, hotelUserPrompt } from '@/lib/ai/prompts/hotel';
-import {
-  FlightExtractionSchema,
-  FlightDetailsSchema,
-  type FlightExtraction,
-} from '@/lib/ai/schemas/flight';
-import {
-  HotelExtractionSchema,
-  HotelDetailsSchema,
-  type HotelExtraction,
-} from '@/lib/ai/schemas/hotel';
+import { getBookingTypeHandler, type Coords } from '@/lib/ai/booking-types';
+
+function fileContentBlock(
+  mimeType: string,
+  fileUrl: string,
+): Anthropic.ContentBlockParam {
+  return mimeType === 'application/pdf'
+    ? { type: 'document', source: { type: 'url', url: fileUrl } }
+    : { type: 'image', source: { type: 'url', url: fileUrl } };
+}
 
 export const parseBookingFunction = inngest.createFunction(
   { id: 'parse-booking', name: 'Parse Booking', triggers: [{ event: 'booking/uploaded' }] },
@@ -32,11 +30,6 @@ export const parseBookingFunction = inngest.createFunction(
 
         const fileUrl = await getPresignedGetUrl(booking.fileKey);
 
-        const fileContent: Anthropic.MessageParam['content'][number] =
-          booking.mimeType === 'application/pdf'
-            ? { type: 'document', source: { type: 'url', url: fileUrl } }
-            : { type: 'image', source: { type: 'url', url: fileUrl } };
-
         const message = await anthropic.messages.create({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 10,
@@ -45,7 +38,7 @@ export const parseBookingFunction = inngest.createFunction(
             {
               role: 'user',
               content: [
-                fileContent,
+                fileContentBlock(booking.mimeType, fileUrl),
                 { type: 'text', text: classifierUserPrompt(booking.fileName) },
               ],
             },
@@ -55,24 +48,26 @@ export const parseBookingFunction = inngest.createFunction(
         const firstBlock = message.content[0];
         const raw =
           firstBlock?.type === 'text' ? firstBlock.text.trim().toLowerCase() : 'unknown';
-        const bookingType =
-          raw === 'flight' ? ('flight' as const) :
-          raw === 'hotel'  ? ('hotel' as const) :
-                             ('unknown' as const);
 
-        if (bookingType === 'unknown') {
+        const handler = getBookingTypeHandler(raw);
+        if (!handler) {
           await updateBooking(bookingId, {
             status: 'parsing_failed',
             parseError: "We couldn't identify this document as a flight or hotel booking.",
           });
-          return { bookingType: 'unknown' as const };
+          return { bookingType: null };
         }
 
-        await updateBooking(bookingId, { type: bookingType });
-        return { bookingType };
+        await updateBooking(bookingId, { type: handler.bookingType });
+        return { bookingType: handler.bookingType };
       });
 
-      if (bookingType === 'unknown') return { status: 'unknown_document' };
+      if (!bookingType) return { status: 'unknown_document' };
+
+      // The handler is re-resolved per step: step results cross a serialization
+      // boundary, so only the plain booking type travels between steps.
+      const handler = getBookingTypeHandler(bookingType);
+      if (!handler) throw new Error(`No handler registered for booking type ${bookingType}`);
 
       // ── Step 2: Extract ─────────────────────────────────────────────────────
       const extractionResult = await step.run('extract', async () => {
@@ -81,33 +76,24 @@ export const parseBookingFunction = inngest.createFunction(
 
         const fileUrl = await getPresignedGetUrl(booking.fileKey);
 
-        const isHotel = bookingType === 'hotel';
-        const schema = isHotel ? HotelExtractionSchema : FlightExtractionSchema;
-        const toolName = isHotel ? 'record_hotel_booking' : 'record_flight_booking';
-        const systemPrompt = isHotel ? hotelSystemPrompt : flightSystemPrompt;
-        const userPrompt = isHotel
-          ? hotelUserPrompt(booking.fileName)
-          : flightUserPrompt(booking.fileName);
-
-        const inputSchema = schema.toJSONSchema() as Anthropic.Tool['input_schema'];
-
-        const fileContent: Anthropic.MessageParam['content'][number] =
-          booking.mimeType === 'application/pdf'
-            ? { type: 'document', source: { type: 'url', url: fileUrl } }
-            : { type: 'image', source: { type: 'url', url: fileUrl } };
-
         const message = await anthropic.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 1024,
-          system: systemPrompt,
-          tools: [{ name: toolName, description: `Record ${bookingType} booking details`, input_schema: inputSchema }],
-          tool_choice: { type: 'tool', name: toolName },
+          system: handler.systemPrompt,
+          tools: [
+            {
+              name: handler.toolName,
+              description: handler.toolDescription,
+              input_schema: handler.inputJsonSchema(),
+            },
+          ],
+          tool_choice: { type: 'tool', name: handler.toolName },
           messages: [
             {
               role: 'user',
               content: [
-                fileContent,
-                { type: 'text', text: userPrompt },
+                fileContentBlock(booking.mimeType, fileUrl),
+                { type: 'text', text: handler.userPrompt(booking.fileName) },
               ],
             },
           ],
@@ -124,8 +110,7 @@ export const parseBookingFunction = inngest.createFunction(
           return null;
         }
 
-        const parsed = schema.safeParse(toolBlock.input);
-        if (!parsed.success) {
+        if (!handler.isValidExtraction(toolBlock.input)) {
           await updateBooking(bookingId, {
             status: 'parsing_failed',
             parseError: 'The AI extracted data in an unexpected format.',
@@ -136,32 +121,34 @@ export const parseBookingFunction = inngest.createFunction(
         await updateBooking(bookingId, {
           rawAiOutput: toolBlock.input as Record<string, unknown>,
         });
-        return parsed.data;
+        return toolBlock.input as Record<string, unknown>;
       });
 
       if (!extractionResult) return { status: 'extraction_failed' };
 
       // ── Step 3: Geocode ─────────────────────────────────────────────────────
-      const coords = await step.run('geocode', async () => {
-        if (bookingType === 'flight') {
-          const data = extractionResult as FlightExtraction;
-          const [startCoords, endCoords] = await Promise.all([
-            geocode(data.departure_airport_label),
-            geocode(data.arrival_airport_label),
-          ]);
-          return {
-            startLat: startCoords ? String(startCoords.lat) : null,
-            startLng: startCoords ? String(startCoords.lng) : null,
-            endLat: endCoords ? String(endCoords.lat) : null,
-            endLng: endCoords ? String(endCoords.lng) : null,
-          };
-        } else {
-          const data = extractionResult as HotelExtraction;
-          const hotelCoords = await geocode(data.address);
-          const latStr = hotelCoords ? String(hotelCoords.lat) : null;
-          const lngStr = hotelCoords ? String(hotelCoords.lng) : null;
-          return { startLat: latStr, startLng: lngStr, endLat: latStr, endLng: lngStr };
+      const coords = await step.run('geocode', async (): Promise<Coords> => {
+        const targets = handler.geocodeTargets(extractionResult);
+        if (!targets) return { startLat: null, startLng: null, endLat: null, endLng: null };
+
+        // One location (a hotel stay) — geocode once and reuse for both endpoints.
+        if (targets.start === targets.end) {
+          const point = await geocode(targets.start);
+          const lat = point ? String(point.lat) : null;
+          const lng = point ? String(point.lng) : null;
+          return { startLat: lat, startLng: lng, endLat: lat, endLng: lng };
         }
+
+        const [startPoint, endPoint] = await Promise.all([
+          geocode(targets.start),
+          geocode(targets.end),
+        ]);
+        return {
+          startLat: startPoint ? String(startPoint.lat) : null,
+          startLng: startPoint ? String(startPoint.lng) : null,
+          endLat: endPoint ? String(endPoint.lat) : null,
+          endLng: endPoint ? String(endPoint.lng) : null,
+        };
       });
 
       // ── Step 4: Write ───────────────────────────────────────────────────────
@@ -169,56 +156,27 @@ export const parseBookingFunction = inngest.createFunction(
         const booking = await getBookingById(bookingId);
         if (!booking) throw new Error(`Booking ${bookingId} not found`);
 
-        const alreadyExists = await segmentExistsForBooking(bookingId);
-
-        if (!alreadyExists) {
-          if (bookingType === 'flight') {
-            const data = extractionResult as FlightExtraction;
-            const details = FlightDetailsSchema.parse(data);
-            const segment = await createSegment({
-              bookingId,
-              tripId: booking.tripId,
-              type: 'flight',
-              startTime: new Date(data.departure_iso),
-              startTimezone: data.departure_timezone,
-              endTime: new Date(data.arrival_iso),
-              endTimezone: data.arrival_timezone,
-              startLocation: data.departure_airport_label,
-              startLat: coords.startLat,
-              startLng: coords.startLng,
-              endLocation: data.arrival_airport_label,
-              endLat: coords.endLat,
-              endLng: coords.endLng,
-              details,
-            });
-            await updateBooking(bookingId, { status: 'parsed' });
-            return { segmentId: segment.id };
-          } else {
-            const data = extractionResult as HotelExtraction;
-            const details = HotelDetailsSchema.parse(data);
-            const segment = await createSegment({
-              bookingId,
-              tripId: booking.tripId,
-              type: 'hotel_stay',
-              startTime: new Date(data.check_in_iso),
-              startTimezone: data.timezone,
-              endTime: new Date(data.check_out_iso),
-              endTimezone: data.timezone,
-              startLocation: data.address,
-              startLat: coords.startLat,
-              startLng: coords.startLng,
-              endLocation: data.address,
-              endLat: coords.endLat,
-              endLng: coords.endLng,
-              details,
-            });
-            await updateBooking(bookingId, { status: 'parsed' });
-            return { segmentId: segment.id };
-          }
+        if (await segmentExistsForBooking(bookingId)) {
+          await updateBooking(bookingId, { status: 'parsed' });
+          return { segmentId: null };
         }
 
+        const fields = handler.toSegmentFields(extractionResult, coords);
+        if (!fields) {
+          await updateBooking(bookingId, {
+            status: 'parsing_failed',
+            parseError: 'The AI extracted data in an unexpected format.',
+          });
+          return { segmentId: null };
+        }
+
+        const segment = await createSegment({
+          ...fields,
+          bookingId,
+          tripId: booking.tripId,
+        });
         await updateBooking(bookingId, { status: 'parsed' });
-        return { segmentId: null };
+        return { segmentId: segment.id };
       });
 
       return { status: 'parsed', segmentId };

@@ -25,9 +25,14 @@ function hasAuthoritativeEnd(segment: Segment): boolean {
 }
 
 export function computeAnnotations(prev: Segment, next: Segment): Annotation {
+  // gapMinutes measures from prev's end when that end is real, and from its
+  // start when it isn't — a hotel's endTime is checkout days later, so it
+  // cannot anchor a same-day gap.
+  const gapAnchor = hasAuthoritativeEnd(prev) ? prev.endTime : prev.startTime;
+
   const gapMinutes = Math.round(
     DateTime.fromJSDate(next.startTime)
-      .diff(DateTime.fromJSDate(prev.endTime), 'minutes')
+      .diff(DateTime.fromJSDate(gapAnchor), 'minutes')
       .minutes,
   );
 
@@ -74,15 +79,24 @@ export function computeAnnotations(prev: Segment, next: Segment): Annotation {
     }
   }
 
-  // Conflict: hotel checkout < 90 min before flight
-  if (prev.type === 'hotel_stay' && next.type === 'flight' && gapMinutes < 90) {
-    return {
-      kind: 'conflict',
-      gapMinutes,
-      distanceKm,
-      message: `Only ${gapMinutes} min between check-out and departure`,
-      conflictDetail: 'Less than 90 minutes is tight for airport travel.',
-    };
+  // Conflict: hotel checkout < 90 min before flight. This rule is specifically
+  // about the checkout-to-departure window, so it measures from endTime even
+  // though the outer gapMinutes anchors to check-in for a stay.
+  if (prev.type === 'hotel_stay' && next.type === 'flight') {
+    const checkoutGapMinutes = Math.round(
+      DateTime.fromJSDate(next.startTime)
+        .diff(DateTime.fromJSDate(prev.endTime), 'minutes')
+        .minutes,
+    );
+    if (checkoutGapMinutes < 90) {
+      return {
+        kind: 'conflict',
+        gapMinutes: checkoutGapMinutes,
+        distanceKm,
+        message: `Only ${checkoutGapMinutes} min between check-out and departure`,
+        conflictDetail: 'Less than 90 minutes is tight for airport travel.',
+      };
+    }
   }
 
   // Normal gap

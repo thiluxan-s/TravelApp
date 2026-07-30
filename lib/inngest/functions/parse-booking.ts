@@ -113,10 +113,15 @@ export const parseBookingFunction = inngest.createFunction(
           return null;
         }
 
-        if (!handler.isValidExtraction(toolBlock.input)) {
+        const validation = handler.validateExtraction(toolBlock.input);
+        if (!validation.ok) {
           await updateBooking(bookingId, {
             status: 'parsing_failed',
             parseError: 'The AI extracted data in an unexpected format.',
+            rawAiOutput: {
+              input: toolBlock.input,
+              validationError: validation.error,
+            } as Record<string, unknown>,
           });
           return null;
         }

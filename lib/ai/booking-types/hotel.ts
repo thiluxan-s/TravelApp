@@ -14,8 +14,10 @@ export const hotelHandler: BookingTypeHandler = {
   inputJsonSchema: () =>
     HotelExtractionSchema.toJSONSchema() as Anthropic.Tool['input_schema'],
 
-  isValidExtraction: (raw: unknown): boolean =>
-    HotelExtractionSchema.safeParse(raw).success,
+  validateExtraction: (raw: unknown) => {
+    const parsed = HotelExtractionSchema.safeParse(raw);
+    return parsed.success ? { ok: true } : { ok: false, error: parsed.error.message };
+  },
 
   // A hotel stay has one location. The job geocodes once when start === end.
   geocodeTargets: (raw: unknown): GeocodeTargets | null => {

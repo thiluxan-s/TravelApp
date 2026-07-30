@@ -14,8 +14,10 @@ export const flightHandler: BookingTypeHandler = {
   inputJsonSchema: () =>
     FlightExtractionSchema.toJSONSchema() as Anthropic.Tool['input_schema'],
 
-  isValidExtraction: (raw: unknown): boolean =>
-    FlightExtractionSchema.safeParse(raw).success,
+  validateExtraction: (raw: unknown) => {
+    const parsed = FlightExtractionSchema.safeParse(raw);
+    return parsed.success ? { ok: true } : { ok: false, error: parsed.error.message };
+  },
 
   geocodeTargets: (raw: unknown): GeocodeTargets | null => {
     const parsed = FlightExtractionSchema.safeParse(raw);

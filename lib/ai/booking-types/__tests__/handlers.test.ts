@@ -77,9 +77,17 @@ describe('flightHandler', () => {
     expect(flightHandler.toSegmentFields({ nonsense: true }, coords)).toBeNull();
   });
 
-  it('validates raw tool input', () => {
-    expect(flightHandler.isValidExtraction(validFlight)).toBe(true);
-    expect(flightHandler.isValidExtraction({ nonsense: true })).toBe(false);
+  it('reports ok for a valid extraction', () => {
+    expect(flightHandler.validateExtraction(validFlight)).toEqual({ ok: true });
+  });
+
+  it('reports the validation error for an invalid extraction', () => {
+    const result = flightHandler.validateExtraction({ nonsense: true });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.length).toBeGreaterThan(0);
+      expect(result.error).toContain('flight_number');
+    }
   });
 });
 
@@ -148,6 +156,17 @@ describe('hotelHandler', () => {
   it('returns null for data that does not match the schema', () => {
     expect(hotelHandler.geocodeTargets({ nonsense: true })).toBeNull();
     expect(hotelHandler.toSegmentFields({ nonsense: true }, hotelCoords)).toBeNull();
-    expect(hotelHandler.isValidExtraction({ nonsense: true })).toBe(false);
+  });
+
+  it('reports ok for a valid extraction', () => {
+    expect(hotelHandler.validateExtraction(validHotel)).toEqual({ ok: true });
+  });
+
+  it('reports the validation error for an invalid extraction', () => {
+    const result = hotelHandler.validateExtraction({ nonsense: true });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain('hotel_name');
+    }
   });
 });

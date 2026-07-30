@@ -33,11 +33,17 @@ export type BookingTypeHandler = {
   toolDescription: string;
   /** Phrase describing this document type, used to build the classifier prompt. */
   classifierDescription: string;
+  /** Plural human label for user-facing type lists, e.g. 'flights'. */
+  pluralLabel: string;
   systemPrompt: string;
   userPrompt: (fileName: string) => string;
   /** JSON Schema for the Anthropic tool's input_schema. */
   inputJsonSchema: () => Anthropic.Tool['input_schema'];
-  isValidExtraction: (raw: unknown) => boolean;
+  /**
+   * Validates raw tool input. On failure the message is stored for debugging —
+   * the user-facing copy stays generic.
+   */
+  validateExtraction: (raw: unknown) => { ok: true } | { ok: false; error: string };
   geocodeTargets: (raw: unknown) => GeocodeTargets | null;
   toSegmentFields: (raw: unknown, coords: Coords) => SegmentFields | null;
 };

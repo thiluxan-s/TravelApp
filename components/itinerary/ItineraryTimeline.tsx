@@ -7,12 +7,13 @@ import {
   summarizeBookingStatuses,
   emptyTimelineReason,
 } from '@/lib/itinerary/booking-status';
+import { buildSupportedTypesPhrase } from '@/lib/ai/booking-types';
 
 const EMPTY_STATE_COPY = {
   'no-bookings': {
     icon: '🗺',
     title: 'No bookings yet',
-    body: 'Upload a flight or hotel confirmation PDF to build your itinerary',
+    body: `Upload a confirmation PDF to build your itinerary — we can read ${buildSupportedTypesPhrase()}`,
   },
   parsing: {
     icon: '⏳',

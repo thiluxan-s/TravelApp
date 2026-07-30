@@ -8,11 +8,28 @@ Phase work itself lives in `docs/phases/` and `docs/superpowers/`. This file is 
 
 ## Blocking-ish
 
-### Runtime verification of Phases 7A and 7B has not happened
+### `/demo` is a build-time snapshot of the database — deploys publish seed changes
 
-Both phases shipped verified by typecheck, lint, and unit tests on their pure logic, but neither got a browser or end-to-end pass. Both need Clerk credentials, a live Neon database, and the Inngest dev server, so they were deliberately left to a human rather than faked. One session covers both.
+`app/demo/page.tsx` declares no `dynamic` or `revalidate`, and `getTripWithBookings` is a direct Drizzle query rather than a `fetch`, so Next renders the page **statically at build time**. Deliberate — it keeps the page fast and costs no function invocations, and the demo trip only changes when someone re-seeds on purpose.
+
+The consequence to remember: **re-seeding changes nothing publicly until the next deploy.** Verified on 2026-07-30 — the database had seven segments while the live page still served the three-segment HTML from the previous build.
+
+That makes deploy order matter whenever a seed change and a code change depend on each other. Merging a *different* branch first would rebuild `/demo` with new data against old code; segment types the deployed code doesn't know fall through to the wrong card and render as "Parsed" placeholders on the public link.
+
+If this ever becomes annoying rather than merely surprising, `export const revalidate = 3600` is the cheap middle ground.
+
+### Runtime verification of Phases 7A, 7B, and 7C has not happened
+
+All three phases shipped verified by typecheck, lint, and unit tests on their pure logic, but none got a browser or end-to-end pass. All need Clerk credentials, a live Neon database, and the Inngest dev server, so they were deliberately left to a human rather than faked. One session covers all three.
 
 Setup: `npm run dev` plus `npx inngest-cli@latest dev` (dashboard at `localhost:8288`).
+
+**Phase 7C — the two new booking types.** The handlers are unit tested but the prompts have never seen a real document, and prompt tuning is expected work here rather than a defect:
+
+- A real **train** confirmation classifies as `train`, extracts, geocodes both stations, and lands on the timeline with two map markers and a line between them
+- A real **restaurant** confirmation classifies as `reservation` — watch for the model answering `restaurant` instead, which falls through to `unknown`
+- The reservation card shows a start time with **no fabricated end** when the document states none
+- On the demo trip after re-seeding: the dinner on the hotel check-in day shows a **gap** pill reading about `2h`, not a red "These bookings overlap in time" conflict. That pairing is the Critical bug 7C fixed; if a red pill appears, the fix regressed.
 
 **Phase 7B — behavior preservation.** This is the one that matters most, because 7B's entire claim is that it changed nothing. Its unit tests cover the handlers, not the job that drives them, so this is the only proof:
 

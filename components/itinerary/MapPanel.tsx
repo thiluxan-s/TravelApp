@@ -29,11 +29,18 @@ export function MapPanel({
     label: DateTime.fromISO(d.date).toFormat('MMM d'),
   }));
 
-  // Filter to segments whose local start date matches the selected day
-  const daySegments = segments.filter((s) => {
-    const localDate = DateTime.fromJSDate(s.startTime, { zone: s.startTimezone }).toISODate();
-    return localDate === selectedDay;
-  });
+  // Filter to segments whose local start date matches the selected day, then
+  // sort by startTime — callers flatten segments in booking-creation order
+  // (upload time), not itinerary order, so the connecting line on the map
+  // would otherwise be drawn out of sequence. See group-by-day.ts for the
+  // same fix applied to the timeline.
+  const daySegments = segments
+    .filter((s) => {
+      const localDate = DateTime.fromJSDate(s.startTime, { zone: s.startTimezone }).toISODate();
+      return localDate === selectedDay;
+    })
+    .slice()
+    .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 
   if (days.length === 0) return null;
 

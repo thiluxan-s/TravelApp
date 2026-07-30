@@ -8,14 +8,17 @@ export const flightHandler: BookingTypeHandler = {
   toolName: 'record_flight_booking',
   toolDescription: 'Record flight booking details',
   classifierDescription: 'a flight booking confirmation',
+  pluralLabel: 'flights',
   systemPrompt: flightSystemPrompt,
   userPrompt: flightUserPrompt,
 
   inputJsonSchema: () =>
     FlightExtractionSchema.toJSONSchema() as Anthropic.Tool['input_schema'],
 
-  isValidExtraction: (raw: unknown): boolean =>
-    FlightExtractionSchema.safeParse(raw).success,
+  validateExtraction: (raw: unknown) => {
+    const parsed = FlightExtractionSchema.safeParse(raw);
+    return parsed.success ? { ok: true } : { ok: false, error: parsed.error.message };
+  },
 
   geocodeTargets: (raw: unknown): GeocodeTargets | null => {
     const parsed = FlightExtractionSchema.safeParse(raw);

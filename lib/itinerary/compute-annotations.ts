@@ -3,11 +3,36 @@ import type { Segment } from '@/lib/db/schema';
 import type { Annotation } from './types';
 import { haversineKm } from './haversine';
 import { HotelDetailsSchema } from '@/lib/ai/schemas/hotel';
+import { ReservationDetailsSchema } from '@/lib/ai/schemas/reservation';
+
+/**
+ * Whether prev.endTime genuinely marks when this segment stops occupying the
+ * traveller, and can therefore support an overlap claim.
+ *
+ * A hotel_stay's endTime is checkout — often days after the day it is grouped
+ * under — so anything else that day would look like an overlap. A reservation's
+ * endTime may be a per-category estimate the handler derived because the
+ * document stated none; asserting a conflict from our own guess is worse than
+ * staying quiet.
+ */
+function hasAuthoritativeEnd(segment: Segment): boolean {
+  if (segment.type === 'hotel_stay') return false;
+  if (segment.type === 'reservation') {
+    const parsed = ReservationDetailsSchema.safeParse(segment.details);
+    return parsed.success ? !parsed.data.end_is_estimated : false;
+  }
+  return true;
+}
 
 export function computeAnnotations(prev: Segment, next: Segment): Annotation {
+  // gapMinutes measures from prev's end when that end is real, and from its
+  // start when it isn't — a hotel's endTime is checkout days later, so it
+  // cannot anchor a same-day gap.
+  const gapAnchor = hasAuthoritativeEnd(prev) ? prev.endTime : prev.startTime;
+
   const gapMinutes = Math.round(
     DateTime.fromJSDate(next.startTime)
-      .diff(DateTime.fromJSDate(prev.endTime), 'minutes')
+      .diff(DateTime.fromJSDate(gapAnchor), 'minutes')
       .minutes,
   );
 
@@ -20,8 +45,8 @@ export function computeAnnotations(prev: Segment, next: Segment): Annotation {
       ? haversineKm(prevLat, prevLng, nextLat, nextLng)
       : null;
 
-  // Conflict: time overlap
-  if (next.startTime < prev.endTime) {
+  // Conflict: time overlap — only when prev's end time is authoritative.
+  if (hasAuthoritativeEnd(prev) && next.startTime < prev.endTime) {
     return {
       kind: 'conflict',
       gapMinutes,
@@ -54,15 +79,24 @@ export function computeAnnotations(prev: Segment, next: Segment): Annotation {
     }
   }
 
-  // Conflict: hotel checkout < 90 min before flight
-  if (prev.type === 'hotel_stay' && next.type === 'flight' && gapMinutes < 90) {
-    return {
-      kind: 'conflict',
-      gapMinutes,
-      distanceKm,
-      message: `Only ${gapMinutes} min between check-out and departure`,
-      conflictDetail: 'Less than 90 minutes is tight for airport travel.',
-    };
+  // Conflict: hotel checkout < 90 min before flight. This rule is specifically
+  // about the checkout-to-departure window, so it measures from endTime even
+  // though the outer gapMinutes anchors to check-in for a stay.
+  if (prev.type === 'hotel_stay' && next.type === 'flight') {
+    const checkoutGapMinutes = Math.round(
+      DateTime.fromJSDate(next.startTime)
+        .diff(DateTime.fromJSDate(prev.endTime), 'minutes')
+        .minutes,
+    );
+    if (checkoutGapMinutes < 90) {
+      return {
+        kind: 'conflict',
+        gapMinutes: checkoutGapMinutes,
+        distanceKm,
+        message: `Only ${checkoutGapMinutes} min between check-out and departure`,
+        conflictDetail: 'Less than 90 minutes is tight for airport travel.',
+      };
+    }
   }
 
   // Normal gap

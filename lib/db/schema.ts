@@ -14,14 +14,25 @@ import { relations } from 'drizzle-orm';
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-export const bookingTypeEnum = pgEnum('booking_type', ['flight', 'hotel', 'unknown']);
+export const bookingTypeEnum = pgEnum('booking_type', [
+  'flight',
+  'hotel',
+  'train',
+  'reservation',
+  'unknown',
+]);
 export const bookingStatusEnum = pgEnum('booking_status', [
   'uploading',
   'parsing',
   'parsed',
   'parsing_failed',
 ]);
-export const segmentTypeEnum = pgEnum('segment_type', ['flight', 'hotel_stay']);
+export const segmentTypeEnum = pgEnum('segment_type', [
+  'flight',
+  'hotel_stay',
+  'train_ride',
+  'reservation',
+]);
 
 // ─── Tables ──────────────────────────────────────────────────────────────────
 

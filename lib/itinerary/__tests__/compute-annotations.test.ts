@@ -129,4 +129,135 @@ describe('computeAnnotations', () => {
     const result = computeAnnotations(prev, next);
     expect(result.kind).toBe('gap');
   });
+
+  it('does not flag a fabricated overlap for a hotel_stay followed by a same-day reservation', () => {
+    // Check-in Mar 11 18:00, checkout Mar 14 11:00 — checkout is days later,
+    // not when the traveller stops occupying the hotel that evening.
+    const prev = makeSegment({
+      type: 'hotel_stay',
+      startTime: new Date('2026-03-11T18:00:00Z'),
+      endTime: new Date('2026-03-14T11:00:00Z'),
+    });
+    const next = makeSegment({
+      type: 'reservation',
+      startTime: new Date('2026-03-11T19:00:00Z'),
+      details: {
+        name: 'Dinner',
+        category: 'restaurant',
+        confirmation_code: null,
+        party_size: 2,
+        address: '1 Test St',
+        phone: null,
+        notes: null,
+        end_is_estimated: false,
+      },
+    });
+    const result = computeAnnotations(prev, next);
+    expect(result.kind).toBe('gap');
+  });
+
+  it('anchors the gap to check-in (not checkout) for a hotel_stay followed by a same-day reservation', () => {
+    // Check-in Mar 11 18:00, checkout Mar 14 11:00 (days later, not authoritative
+    // for a same-day gap). Dinner at 19:00 is 1h after check-in, not 64h after
+    // checkout.
+    const prev = makeSegment({
+      type: 'hotel_stay',
+      startTime: new Date('2026-03-11T18:00:00Z'),
+      endTime: new Date('2026-03-14T11:00:00Z'),
+    });
+    const next = makeSegment({
+      type: 'reservation',
+      startTime: new Date('2026-03-11T19:00:00Z'),
+      details: {
+        name: 'Dinner',
+        category: 'restaurant',
+        confirmation_code: null,
+        party_size: 2,
+        address: '1 Test St',
+        phone: null,
+        notes: null,
+        end_is_estimated: false,
+      },
+    });
+    const result = computeAnnotations(prev, next);
+    expect(result.kind).toBe('gap');
+    expect(result.message).toBe('1h');
+  });
+
+  it('anchors the gap to start (not the estimated end) for a reservation with an estimated end time', () => {
+    // Dinner starts 19:00 (estimated end 20:30, not authoritative). Next event
+    // at 20:00 is 1h after the reservation's start.
+    const prev = makeSegment({
+      type: 'reservation',
+      startTime: new Date('2026-03-11T19:00:00Z'),
+      endTime: new Date('2026-03-11T20:30:00Z'),
+      details: {
+        name: 'Dinner',
+        category: 'restaurant',
+        confirmation_code: null,
+        party_size: 2,
+        address: '1 Test St',
+        phone: null,
+        notes: null,
+        end_is_estimated: true,
+      },
+    });
+    const next = makeSegment({
+      type: 'reservation',
+      startTime: new Date('2026-03-11T20:00:00Z'),
+    });
+    const result = computeAnnotations(prev, next);
+    expect(result.kind).toBe('gap');
+    expect(result.message).toBe('1h');
+  });
+
+  it('does not flag an overlap when prev is a reservation with an estimated end time', () => {
+    // Dinner at 19:00, estimated end 20:30 (not authoritative) — a 20:00 show
+    // starting before that guessed end should not be reported as a conflict.
+    const prev = makeSegment({
+      type: 'reservation',
+      startTime: new Date('2026-03-11T19:00:00Z'),
+      endTime: new Date('2026-03-11T20:30:00Z'),
+      details: {
+        name: 'Dinner',
+        category: 'restaurant',
+        confirmation_code: null,
+        party_size: 2,
+        address: '1 Test St',
+        phone: null,
+        notes: null,
+        end_is_estimated: true,
+      },
+    });
+    const next = makeSegment({
+      type: 'reservation',
+      startTime: new Date('2026-03-11T20:00:00Z'),
+    });
+    const result = computeAnnotations(prev, next);
+    expect(result.kind).toBe('gap');
+  });
+
+  it('still flags an overlap when prev is a reservation with a stated (non-estimated) end time', () => {
+    const prev = makeSegment({
+      type: 'reservation',
+      startTime: new Date('2026-03-11T19:00:00Z'),
+      endTime: new Date('2026-03-11T20:30:00Z'),
+      details: {
+        name: 'Dinner',
+        category: 'restaurant',
+        confirmation_code: null,
+        party_size: 2,
+        address: '1 Test St',
+        phone: null,
+        notes: null,
+        end_is_estimated: false,
+      },
+    });
+    const next = makeSegment({
+      type: 'reservation',
+      startTime: new Date('2026-03-11T20:00:00Z'),
+    });
+    const result = computeAnnotations(prev, next);
+    expect(result.kind).toBe('conflict');
+  });
 });

@@ -10,7 +10,7 @@ type HoverDetail = { segmentId: string; active: boolean };
 export function TripMap({ segments }: { segments: Segment[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  // keys: "${segmentId}::start" | "${segmentId}::end" | "${segmentId}::hotel"
+  // keys: "${segmentId}::start" | "${segmentId}::end" | "${segmentId}::point"
   const markersRef = useRef<Map<string, { marker: mapboxgl.Marker; el: HTMLElement }>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -55,9 +55,11 @@ export function TripMap({ segments }: { segments: Segment[] }) {
       const endLat = seg.endLat != null ? parseFloat(seg.endLat) : null;
       const endLng = seg.endLng != null ? parseFloat(seg.endLng) : null;
 
-      if (seg.type === 'flight') {
+      const isTransit = seg.type === 'flight' || seg.type === 'train_ride';
+
+      if (isTransit) {
         if (startLat != null && startLng != null) {
-          const { container, dot } = makeMarkerEl('flight');
+          const { container, dot } = makeMarkerEl('transit');
           const marker = new mapboxgl.Marker({ element: container })
             .setLngLat([startLng, startLat])
             .addTo(m);
@@ -65,7 +67,7 @@ export function TripMap({ segments }: { segments: Segment[] }) {
           coords.push([startLng, startLat]);
         }
         if (endLat != null && endLng != null) {
-          const { container, dot } = makeMarkerEl('flight');
+          const { container, dot } = makeMarkerEl('transit');
           const marker = new mapboxgl.Marker({ element: container })
             .setLngLat([endLng, endLat])
             .addTo(m);
@@ -73,13 +75,15 @@ export function TripMap({ segments }: { segments: Segment[] }) {
           coords.push([endLng, endLat]);
         }
       } else {
-        // hotel_stay: single pin at startLat/startLng
+        // hotel_stay and reservation: a single pin at startLat/startLng
         if (startLat != null && startLng != null) {
-          const { container, dot } = makeMarkerEl('hotel');
+          const { container, dot } = makeMarkerEl(
+            seg.type === 'reservation' ? 'reservation' : 'stay',
+          );
           const marker = new mapboxgl.Marker({ element: container })
             .setLngLat([startLng, startLat])
             .addTo(m);
-          markersRef.current.set(`${seg.id}::hotel`, { marker, el: dot });
+          markersRef.current.set(`${seg.id}::point`, { marker, el: dot });
           coords.push([startLng, startLat]);
         }
       }
@@ -157,7 +161,15 @@ export function TripMap({ segments }: { segments: Segment[] }) {
   );
 }
 
-function makeMarkerEl(type: 'flight' | 'hotel'): { container: HTMLElement; dot: HTMLElement } {
+type MarkerKind = 'transit' | 'stay' | 'reservation';
+
+const MARKER_COLOR: Record<MarkerKind, string> = {
+  transit: '#3b82f6',
+  stay: '#a855f7',
+  reservation: '#f59e0b',
+};
+
+function makeMarkerEl(kind: MarkerKind): { container: HTMLElement; dot: HTMLElement } {
   // container: Mapbox owns its transform for positioning — never touch it
   const container = document.createElement('div');
   container.style.cssText = 'width:14px;height:14px;display:flex;align-items:center;justify-content:center;';
@@ -168,7 +180,7 @@ function makeMarkerEl(type: 'flight' | 'hotel'): { container: HTMLElement; dot: 
     'height: 14px',
     'border-radius: 50%',
     'border: 2px solid #09090b',
-    `background: ${type === 'hotel' ? '#a855f7' : '#3b82f6'}`,
+    `background: ${MARKER_COLOR[kind]}`,
     'transition: transform 150ms ease, box-shadow 150ms ease',
     'cursor: default',
   ].join(';');

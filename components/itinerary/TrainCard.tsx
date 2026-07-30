@@ -1,13 +1,13 @@
 import { DateTime } from 'luxon';
-import { FlightDetailsSchema } from '@/lib/ai/schemas/flight';
+import { TrainDetailsSchema } from '@/lib/ai/schemas/train';
 import type { Segment } from '@/lib/db/schema';
 
 function fmt(dt: DateTime, pattern: string): string {
   return dt.isValid ? dt.toFormat(pattern) : '—';
 }
 
-export function FlightCard({ segment }: { segment: Segment }) {
-  const details = FlightDetailsSchema.safeParse(segment.details);
+export function TrainCard({ segment }: { segment: Segment }) {
+  const details = TrainDetailsSchema.safeParse(segment.details);
   const dep = DateTime.fromJSDate(segment.startTime, { zone: segment.startTimezone });
   const arr = DateTime.fromJSDate(segment.endTime, { zone: segment.endTimezone });
   const durationMins =
@@ -24,7 +24,7 @@ export function FlightCard({ segment }: { segment: Segment }) {
   if (!details.success) {
     return (
       <div className="rounded-lg border border-border bg-card p-4">
-        <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">✈ Flight</p>
+        <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">🚄 Train</p>
         <p className="text-sm text-muted-foreground">Parsed</p>
       </div>
     );
@@ -34,41 +34,43 @@ export function FlightCard({ segment }: { segment: Segment }) {
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      {/* Header */}
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">✈ Flight</span>
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">🚄 Train</span>
         {d.confirmation_code && (
           <span className="text-xs text-muted-foreground">Conf: {d.confirmation_code}</span>
         )}
       </div>
 
-      {/* Route */}
       <div className="mb-3 flex items-center">
-        <div className="text-center">
-          <div className="text-3xl font-bold tracking-tight">{d.departure_airport_code}</div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-lg font-semibold tracking-tight">
+            {d.departure_station}
+          </div>
           <div className="mt-0.5 text-xs text-muted-foreground">{fmt(dep, 'HH:mm')}</div>
           <div className="text-xs text-muted-foreground">{fmt(dep, 'EEE MMM d')}</div>
         </div>
-        <div className="relative flex flex-1 flex-col items-center px-3">
-          <div className="mb-1 text-xs text-muted-foreground">{durationStr}</div>
-          <div className="relative w-full">
+        <div className="flex flex-col items-center px-3">
+          <div className="mb-1 whitespace-nowrap text-xs text-muted-foreground">
+            {durationStr}
+          </div>
+          <div className="relative w-12">
             <div className="h-px w-full bg-border" />
             <span className="absolute -right-1 -top-[5px] text-xs text-muted-foreground">▶</span>
           </div>
         </div>
-        <div className="text-center">
-          <div className="text-3xl font-bold tracking-tight">{d.arrival_airport_code}</div>
+        <div className="min-w-0 flex-1 text-right">
+          <div className="truncate text-lg font-semibold tracking-tight">{d.arrival_station}</div>
           <div className="mt-0.5 text-xs text-muted-foreground">{fmt(arr, 'HH:mm')}</div>
           <div className="text-xs text-muted-foreground">{fmt(arr, 'EEE MMM d')}</div>
         </div>
       </div>
 
-      {/* Footer */}
       <div className="flex flex-wrap gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
-        <span>{d.airline}</span>
-        <span>{d.flight_number}</span>
+        <span>{d.operator}</span>
+        <span>{d.train_number}</span>
+        {d.coach && <span>Coach {d.coach}</span>}
         {d.seat && <span>Seat {d.seat}</span>}
-        {d.cabin_class && <span>{d.cabin_class}</span>}
+        {d.travel_class && <span>{d.travel_class}</span>}
       </div>
     </div>
   );

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import type { Booking, Segment } from '@/lib/db/schema';
 import { FlightDetailsSchema } from '@/lib/ai/schemas/flight';
 import { HotelDetailsSchema } from '@/lib/ai/schemas/hotel';
+import { TrainDetailsSchema } from '@/lib/ai/schemas/train';
+import { ReservationDetailsSchema } from '@/lib/ai/schemas/reservation';
 
 type Props = {
   booking: Booking;
@@ -12,6 +14,8 @@ type Props = {
 const typeIcon: Record<string, string> = {
   flight: '✈',
   hotel: '🏨',
+  train: '🚄',
+  reservation: '📌',
   unknown: '📄',
 };
 
@@ -110,6 +114,44 @@ function ParsedLine({ segment }: { segment?: Segment }) {
         <p className="font-medium text-foreground">{details.hotel_name}</p>
         <p>
           {checkIn} → {checkOut}
+        </p>
+        <p className="truncate">{details.address}</p>
+      </div>
+    );
+  }
+
+  if (segment.type === 'train_ride') {
+    const parsed = TrainDetailsSchema.safeParse(segment.details);
+    if (!parsed.success) return <p className="text-xs text-emerald-500">✓ Parsed</p>;
+    const details = parsed.data;
+    const depTime = formatLocalTime(new Date(segment.startTime), segment.startTimezone);
+    const arrTime = formatLocalTime(new Date(segment.endTime), segment.endTimezone);
+    return (
+      <div className="text-xs text-muted-foreground space-y-0.5 mt-0.5">
+        <p className="font-medium text-foreground">
+          {details.departure_station} → {details.arrival_station}
+        </p>
+        <p>
+          {details.train_number} · {details.operator}
+        </p>
+        <p>
+          {depTime} → {arrTime}
+        </p>
+      </div>
+    );
+  }
+
+  if (segment.type === 'reservation') {
+    const parsed = ReservationDetailsSchema.safeParse(segment.details);
+    if (!parsed.success) return <p className="text-xs text-emerald-500">✓ Parsed</p>;
+    const details = parsed.data;
+    const date = formatLocalDate(new Date(segment.startTime), segment.startTimezone);
+    const time = formatLocalTime(new Date(segment.startTime), segment.startTimezone);
+    return (
+      <div className="text-xs text-muted-foreground space-y-0.5 mt-0.5">
+        <p className="font-medium text-foreground">{details.name}</p>
+        <p>
+          {date} · {time}
         </p>
         <p className="truncate">{details.address}</p>
       </div>

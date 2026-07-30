@@ -6,6 +6,7 @@ import {
   buildSupportedTypesPhrase,
   buildUnidentifiedDocumentMessage,
 } from '../index';
+import { validFlight, validHotel, validTrain, validReservation } from './fixtures';
 
 describe('bookingTypeHandlers', () => {
   it('keys every handler by its own booking type', () => {
@@ -22,6 +23,52 @@ describe('bookingTypeHandlers', () => {
   it('produces a valid tool input schema for every handler', () => {
     for (const handler of Object.values(bookingTypeHandlers)) {
       expect(handler.inputJsonSchema()).toMatchObject({ type: 'object' });
+    }
+  });
+
+  it('never accepts an extraction it cannot then map to segment fields', () => {
+    // The parse job validates in the extract step and maps in the write step.
+    // If those two ever disagree, a booking is marked failed after its raw output
+    // was already stored — the write step's failure branch exists only for that.
+    const samples: Record<string, unknown> = {
+      flight: validFlight,
+      hotel: validHotel,
+      train: validTrain,
+      reservation: validReservation,
+    };
+    const coordsAllNull = {
+      startLat: null,
+      startLng: null,
+      endLat: null,
+      endLng: null,
+    };
+    for (const [key, handler] of Object.entries(bookingTypeHandlers)) {
+      const sample = samples[key];
+      expect(sample, `no sample extraction for handler "${key}"`).toBeDefined();
+      expect(handler.validateExtraction(sample)).toEqual({ ok: true });
+      expect(handler.toSegmentFields(sample, coordsAllNull)).not.toBeNull();
+    }
+  });
+
+  it('returns identical geocode targets exactly for single-location types', () => {
+    // The parse job geocodes once when start === end. A one-location handler that
+    // returned two different strings for the same place would silently double
+    // Mapbox calls against a metered free tier.
+    const singleLocation = new Set(['hotel', 'reservation']);
+    const samples: Record<string, unknown> = {
+      flight: validFlight,
+      hotel: validHotel,
+      train: validTrain,
+      reservation: validReservation,
+    };
+    for (const [key, handler] of Object.entries(bookingTypeHandlers)) {
+      const targets = handler.geocodeTargets(samples[key]);
+      expect(targets).not.toBeNull();
+      if (singleLocation.has(key)) {
+        expect(targets!.start, `${key} should geocode one location`).toBe(targets!.end);
+      } else {
+        expect(targets!.start, `${key} should geocode two locations`).not.toBe(targets!.end);
+      }
     }
   });
 });

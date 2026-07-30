@@ -8,13 +8,15 @@ Phase work itself lives in `docs/phases/` and `docs/superpowers/`. This file is 
 
 ## Blocking-ish
 
-### Re-seed the demo trip so /demo shows trains and reservations
+### `/demo` is a build-time snapshot of the database — deploys publish seed changes
 
-Phase 7C added a train day trip and two reservations to `scripts/seed-demo.ts`, but the script exits early when the demo trip already exists — so the live demo still shows only two flights and a hotel until it is re-seeded.
+`app/demo/page.tsx` declares no `dynamic` or `revalidate`, and `getTripWithBookings` is a direct Drizzle query rather than a `fetch`, so Next renders the page **statically at build time**. Deliberate — it keeps the page fast and costs no function invocations, and the demo trip only changes when someone re-seeds on purpose.
 
-`npm run seed:demo:reset` deletes the demo trip and re-inserts it (bookings and segments cascade). **This rewrites the trip behind the public `/demo` link**, which is why it is a separate script rather than the default.
+The consequence to remember: **re-seeding changes nothing publicly until the next deploy.** Verified on 2026-07-30 — the database had seven segments while the live page still served the three-segment HTML from the previous build.
 
-Do this before taking the README screenshots — the whole point of sequencing them after 7C was to capture the richer itinerary.
+That makes deploy order matter whenever a seed change and a code change depend on each other. Merging a *different* branch first would rebuild `/demo` with new data against old code; segment types the deployed code doesn't know fall through to the wrong card and render as "Parsed" placeholders on the public link.
+
+If this ever becomes annoying rather than merely surprising, `export const revalidate = 3600` is the cheap middle ground.
 
 ### Runtime verification of Phases 7A, 7B, and 7C has not happened
 

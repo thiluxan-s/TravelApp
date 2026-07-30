@@ -152,13 +152,13 @@ export const parseBookingFunction = inngest.createFunction(
       });
 
       // ── Step 4: Write ───────────────────────────────────────────────────────
-      const { segmentId } = await step.run('write', async () => {
+      const result = await step.run('write', async () => {
         const booking = await getBookingById(bookingId);
         if (!booking) throw new Error(`Booking ${bookingId} not found`);
 
         if (await segmentExistsForBooking(bookingId)) {
           await updateBooking(bookingId, { status: 'parsed' });
-          return { segmentId: null };
+          return { failed: false as const, segmentId: null };
         }
 
         const fields = handler.toSegmentFields(extractionResult, coords);
@@ -167,7 +167,7 @@ export const parseBookingFunction = inngest.createFunction(
             status: 'parsing_failed',
             parseError: 'The AI extracted data in an unexpected format.',
           });
-          return { segmentId: null };
+          return { failed: true as const };
         }
 
         const segment = await createSegment({
@@ -176,10 +176,11 @@ export const parseBookingFunction = inngest.createFunction(
           tripId: booking.tripId,
         });
         await updateBooking(bookingId, { status: 'parsed' });
-        return { segmentId: segment.id };
+        return { failed: false as const, segmentId: segment.id };
       });
 
-      return { status: 'parsed', segmentId };
+      if (result.failed) return { status: 'extraction_failed' };
+      return { status: 'parsed', segmentId: result.segmentId };
     } catch (err) {
       await updateBooking(bookingId, {
         status: 'parsing_failed',

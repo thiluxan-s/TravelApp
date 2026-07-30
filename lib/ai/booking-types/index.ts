@@ -1,5 +1,6 @@
 import { flightHandler } from './flight';
 import { hotelHandler } from './hotel';
+import { trainHandler } from './train';
 import type { BookingTypeHandler, HandledBookingType } from './types';
 
 export type {
@@ -17,6 +18,7 @@ export type {
 export const bookingTypeHandlers: Record<HandledBookingType, BookingTypeHandler> = {
   flight: flightHandler,
   hotel: hotelHandler,
+  train: trainHandler,
 };
 
 export function getBookingTypeHandler(type: string): BookingTypeHandler | null {

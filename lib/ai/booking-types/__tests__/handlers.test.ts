@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { flightHandler } from '../flight';
 import { hotelHandler } from '../hotel';
+import { trainHandler } from '../train';
 
 const validFlight = {
   flight_number: 'AC001',
@@ -168,5 +169,67 @@ describe('hotelHandler', () => {
     if (!result.ok) {
       expect(result.error).toContain('hotel_name');
     }
+  });
+});
+
+const validTrain = {
+  train_number: 'NZ 21',
+  operator: 'JR Central',
+  confirmation_code: 'TRN456',
+  departure_station: 'Tokyo',
+  arrival_station: 'Kyoto',
+  coach: '7',
+  seat: '11D',
+  travel_class: 'Green Car',
+  departure_iso: '2026-03-14T09:00:00+09:00',
+  departure_timezone: 'Asia/Tokyo',
+  arrival_iso: '2026-03-14T11:15:00+09:00',
+  arrival_timezone: 'Asia/Tokyo',
+  departure_station_label: 'Tokyo Station, Tokyo, Japan',
+  arrival_station_label: 'Kyoto Station, Kyoto, Japan',
+};
+
+describe('trainHandler', () => {
+  it('declares its booking type and tool name', () => {
+    expect(trainHandler.bookingType).toBe('train');
+    expect(trainHandler.toolName).toBe('record_train_booking');
+  });
+
+  it('geocodes the departure and arrival station labels', () => {
+    expect(trainHandler.geocodeTargets(validTrain)).toEqual({
+      start: 'Tokyo Station, Tokyo, Japan',
+      end: 'Kyoto Station, Kyoto, Japan',
+    });
+  });
+
+  it('maps extraction and coordinates onto segment fields', () => {
+    const fields = trainHandler.toSegmentFields(validTrain, coords);
+    expect(fields).not.toBeNull();
+    expect(fields!.type).toBe('train_ride');
+    expect(fields!.startTime).toEqual(new Date('2026-03-14T09:00:00+09:00'));
+    expect(fields!.endTime).toEqual(new Date('2026-03-14T11:15:00+09:00'));
+    expect(fields!.startTimezone).toBe('Asia/Tokyo');
+    expect(fields!.startLocation).toBe('Tokyo Station, Tokyo, Japan');
+    expect(fields!.endLocation).toBe('Kyoto Station, Kyoto, Japan');
+  });
+
+  it('strips extraction-only fields out of the stored details', () => {
+    const fields = trainHandler.toSegmentFields(validTrain, coords);
+    expect(fields!.details).toEqual({
+      train_number: 'NZ 21',
+      operator: 'JR Central',
+      confirmation_code: 'TRN456',
+      departure_station: 'Tokyo',
+      arrival_station: 'Kyoto',
+      coach: '7',
+      seat: '11D',
+      travel_class: 'Green Car',
+    });
+  });
+
+  it('returns null for data that does not match the schema', () => {
+    expect(trainHandler.geocodeTargets({ nonsense: true })).toBeNull();
+    expect(trainHandler.toSegmentFields({ nonsense: true }, coords)).toBeNull();
+    expect(trainHandler.validateExtraction({ nonsense: true }).ok).toBe(false);
   });
 });

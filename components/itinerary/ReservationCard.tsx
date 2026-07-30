@@ -1,8 +1,8 @@
 import { DateTime } from 'luxon';
-import { ReservationDetailsSchema } from '@/lib/ai/schemas/reservation';
+import { ReservationDetailsSchema, type ReservationCategory } from '@/lib/ai/schemas/reservation';
 import type { Segment } from '@/lib/db/schema';
 
-const CATEGORY_LABEL: Record<string, string> = {
+const CATEGORY_LABEL: Record<ReservationCategory, string> = {
   restaurant: '🍽 Restaurant',
   activity: '🎟 Activity',
   tour: '🧭 Tour',

@@ -14,9 +14,11 @@ export function FlightCard({ segment }: { segment: Segment }) {
     dep.isValid && arr.isValid ? Math.round(arr.diff(dep, 'minutes').minutes) : null;
   const durationStr =
     durationMins != null
-      ? durationMins % 60 > 0
-        ? `${Math.floor(durationMins / 60)}h ${durationMins % 60}m`
-        : `${Math.floor(durationMins / 60)}h`
+      ? Math.floor(durationMins / 60) === 0
+        ? `${durationMins % 60}m`
+        : durationMins % 60 > 0
+          ? `${Math.floor(durationMins / 60)}h ${durationMins % 60}m`
+          : `${Math.floor(durationMins / 60)}h`
       : '—';
 
   if (!details.success) {

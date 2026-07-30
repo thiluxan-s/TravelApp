@@ -33,6 +33,8 @@ export type BookingTypeHandler = {
   toolDescription: string;
   /** Phrase describing this document type, used to build the classifier prompt. */
   classifierDescription: string;
+  /** Plural human label for user-facing type lists, e.g. 'flights'. */
+  pluralLabel: string;
   systemPrompt: string;
   userPrompt: (fileName: string) => string;
   /** JSON Schema for the Anthropic tool's input_schema. */

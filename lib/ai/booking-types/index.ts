@@ -37,3 +37,15 @@ Respond with exactly one word — no punctuation, no explanation:
 ${options}
 - "unknown" if you cannot determine the type or it is none of these`;
 }
+
+/** e.g. "flights, hotels, trains, or reservations" — built from the registry. */
+export function buildSupportedTypesPhrase(): string {
+  const labels = Object.values(bookingTypeHandlers).map((h) => h.pluralLabel);
+  if (labels.length === 1) return labels[0];
+  if (labels.length === 2) return `${labels[0]} or ${labels[1]}`;
+  return `${labels.slice(0, -1).join(', ')}, or ${labels[labels.length - 1]}`;
+}
+
+export function buildUnidentifiedDocumentMessage(): string {
+  return `We couldn't identify this document. We can read ${buildSupportedTypesPhrase()}.`;
+}

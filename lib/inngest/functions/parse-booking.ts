@@ -6,7 +6,11 @@ import { geocode } from '@/lib/mapbox/client';
 import { getBookingById, updateBooking } from '@/lib/db/repositories/bookings';
 import { createSegment, segmentExistsForBooking } from '@/lib/db/repositories/segments';
 import { classifierSystemPrompt, classifierUserPrompt } from '@/lib/ai/prompts/classifier';
-import { getBookingTypeHandler, type Coords } from '@/lib/ai/booking-types';
+import {
+  getBookingTypeHandler,
+  buildUnidentifiedDocumentMessage,
+  type Coords,
+} from '@/lib/ai/booking-types';
 
 function fileContentBlock(
   mimeType: string,
@@ -53,10 +57,7 @@ export const parseBookingFunction = inngest.createFunction(
         if (!handler) {
           await updateBooking(bookingId, {
             status: 'parsing_failed',
-            // TODO(7C): generate this from the registry alongside buildClassifierSystemPrompt —
-            // it still enumerates the type set, so a train or restaurant PDF would be told
-            // the app only reads flights and hotels.
-            parseError: "We couldn't identify this document as a flight or hotel booking.",
+            parseError: buildUnidentifiedDocumentMessage(),
           });
           return { bookingType: null };
         }

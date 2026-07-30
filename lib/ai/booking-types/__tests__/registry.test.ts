@@ -3,6 +3,8 @@ import {
   bookingTypeHandlers,
   getBookingTypeHandler,
   buildClassifierSystemPrompt,
+  buildSupportedTypesPhrase,
+  buildUnidentifiedDocumentMessage,
 } from '../index';
 
 describe('bookingTypeHandlers', () => {
@@ -51,5 +53,30 @@ describe('buildClassifierSystemPrompt', () => {
 
   it('always offers unknown as an option', () => {
     expect(buildClassifierSystemPrompt()).toContain('"unknown"');
+  });
+});
+
+describe('buildSupportedTypesPhrase', () => {
+  it('lists every registered handler by its plural label', () => {
+    const phrase = buildSupportedTypesPhrase();
+    for (const handler of Object.values(bookingTypeHandlers)) {
+      expect(handler.pluralLabel.length).toBeGreaterThan(0);
+      expect(phrase).toContain(handler.pluralLabel);
+    }
+  });
+
+  it('joins the last item with "or"', () => {
+    expect(buildSupportedTypesPhrase()).toMatch(/, or |^\w+ or /);
+  });
+});
+
+describe('buildUnidentifiedDocumentMessage', () => {
+  it('names the supported types', () => {
+    const message = buildUnidentifiedDocumentMessage();
+    expect(message).toContain(buildSupportedTypesPhrase());
+  });
+
+  it('does not hardcode a type list', () => {
+    expect(buildUnidentifiedDocumentMessage()).not.toContain('flight or hotel');
   });
 });

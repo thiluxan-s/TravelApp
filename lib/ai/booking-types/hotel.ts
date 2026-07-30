@@ -8,6 +8,7 @@ export const hotelHandler: BookingTypeHandler = {
   toolName: 'record_hotel_booking',
   toolDescription: 'Record hotel booking details',
   classifierDescription: 'a hotel booking confirmation',
+  pluralLabel: 'hotels',
   systemPrompt: hotelSystemPrompt,
   userPrompt: hotelUserPrompt,
 

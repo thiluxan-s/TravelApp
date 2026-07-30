@@ -8,6 +8,7 @@ export const flightHandler: BookingTypeHandler = {
   toolName: 'record_flight_booking',
   toolDescription: 'Record flight booking details',
   classifierDescription: 'a flight booking confirmation',
+  pluralLabel: 'flights',
   systemPrompt: flightSystemPrompt,
   userPrompt: flightUserPrompt,
 

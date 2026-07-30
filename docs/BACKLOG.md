@@ -8,11 +8,26 @@ Phase work itself lives in `docs/phases/` and `docs/superpowers/`. This file is 
 
 ## Blocking-ish
 
-### Runtime verification of Phases 7A and 7B has not happened
+### Re-seed the demo trip so /demo shows trains and reservations
 
-Both phases shipped verified by typecheck, lint, and unit tests on their pure logic, but neither got a browser or end-to-end pass. Both need Clerk credentials, a live Neon database, and the Inngest dev server, so they were deliberately left to a human rather than faked. One session covers both.
+Phase 7C added a train day trip and two reservations to `scripts/seed-demo.ts`, but the script exits early when the demo trip already exists — so the live demo still shows only two flights and a hotel until it is re-seeded.
+
+`npm run seed:demo:reset` deletes the demo trip and re-inserts it (bookings and segments cascade). **This rewrites the trip behind the public `/demo` link**, which is why it is a separate script rather than the default.
+
+Do this before taking the README screenshots — the whole point of sequencing them after 7C was to capture the richer itinerary.
+
+### Runtime verification of Phases 7A, 7B, and 7C has not happened
+
+All three phases shipped verified by typecheck, lint, and unit tests on their pure logic, but none got a browser or end-to-end pass. All need Clerk credentials, a live Neon database, and the Inngest dev server, so they were deliberately left to a human rather than faked. One session covers all three.
 
 Setup: `npm run dev` plus `npx inngest-cli@latest dev` (dashboard at `localhost:8288`).
+
+**Phase 7C — the two new booking types.** The handlers are unit tested but the prompts have never seen a real document, and prompt tuning is expected work here rather than a defect:
+
+- A real **train** confirmation classifies as `train`, extracts, geocodes both stations, and lands on the timeline with two map markers and a line between them
+- A real **restaurant** confirmation classifies as `reservation` — watch for the model answering `restaurant` instead, which falls through to `unknown`
+- The reservation card shows a start time with **no fabricated end** when the document states none
+- On the demo trip after re-seeding: the dinner on the hotel check-in day shows a **gap** pill reading about `2h`, not a red "These bookings overlap in time" conflict. That pairing is the Critical bug 7C fixed; if a red pill appears, the fix regressed.
 
 **Phase 7B — behavior preservation.** This is the one that matters most, because 7B's entire claim is that it changed nothing. Its unit tests cover the handlers, not the job that drives them, so this is the only proof:
 

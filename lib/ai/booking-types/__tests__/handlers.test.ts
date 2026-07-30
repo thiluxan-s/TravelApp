@@ -30,7 +30,6 @@ const coords = {
 describe('flightHandler', () => {
   it('declares its booking type, segment type, and tool name', () => {
     expect(flightHandler.bookingType).toBe('flight');
-    expect(flightHandler.segmentType).toBe('flight');
     expect(flightHandler.toolName).toBe('record_flight_booking');
   });
 
@@ -108,7 +107,6 @@ const hotelCoords = {
 describe('hotelHandler', () => {
   it('declares its booking type, segment type, and tool name', () => {
     expect(hotelHandler.bookingType).toBe('hotel');
-    expect(hotelHandler.segmentType).toBe('hotel_stay');
     expect(hotelHandler.toolName).toBe('record_hotel_booking');
   });
 

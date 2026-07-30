@@ -5,7 +5,6 @@ import type { BookingTypeHandler, Coords, GeocodeTargets, SegmentFields } from '
 
 export const flightHandler: BookingTypeHandler = {
   bookingType: 'flight',
-  segmentType: 'flight',
   toolName: 'record_flight_booking',
   toolDescription: 'Record flight booking details',
   classifierDescription: 'a flight booking confirmation',

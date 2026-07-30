@@ -5,7 +5,6 @@ import type { BookingTypeHandler, Coords, GeocodeTargets, SegmentFields } from '
 
 export const hotelHandler: BookingTypeHandler = {
   bookingType: 'hotel',
-  segmentType: 'hotel_stay',
   toolName: 'record_hotel_booking',
   toolDescription: 'Record hotel booking details',
   classifierDescription: 'a hotel booking confirmation',

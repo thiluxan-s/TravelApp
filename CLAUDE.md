@@ -112,7 +112,7 @@ docs/                     # PRD, architecture, phase docs
 - Always use structured outputs via tool_use or response prefilling with a Zod schema.
 - Validate the AI's response with Zod before writing to the DB. If validation fails, mark the booking `parsing_failed` with the validation error stored — don't crash the job.
 - Don't put raw PDFs in the database. Store in R2, keep the R2 key in the booking row.
-- Each parseable booking type is one file in `lib/ai/booking-types/`, exporting a `BookingTypeHandler`: its prompts, tool name, JSON schema, geocode targets, and segment mapper. `lib/ai/booking-types/index.ts` is the registry — the single place that knows which types exist, and the source the classifier prompt is generated from. Adding a booking type means adding a handler file and one registry entry; the Inngest parse job needs no changes.
+- Each parseable booking type is one file in `lib/ai/booking-types/`, exporting a `BookingTypeHandler`: its prompts, tool name, JSON schema, geocode targets, and segment mapper. `lib/ai/booking-types/index.ts` is the registry — the single place that knows which types exist, and the source the classifier prompt is generated from. Adding a booking type means adding a handler file and one registry entry; the Inngest parse job needs no structural changes (one user-facing string in the classify step still names the types — see the TODO there).
 - Prompt text lives in `lib/ai/prompts/<type>.ts` and Zod schemas in `lib/ai/schemas/<type>.ts`. Handlers compose them rather than absorbing them, because the details schemas are also used for rendering outside the parsing pipeline.
 
 ### Environment variables

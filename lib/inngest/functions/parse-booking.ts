@@ -53,6 +53,9 @@ export const parseBookingFunction = inngest.createFunction(
         if (!handler) {
           await updateBooking(bookingId, {
             status: 'parsing_failed',
+            // TODO(7C): generate this from the registry alongside buildClassifierSystemPrompt —
+            // it still enumerates the type set, so a train or restaurant PDF would be told
+            // the app only reads flights and hotels.
             parseError: "We couldn't identify this document as a flight or hotel booking.",
           });
           return { bookingType: null };
@@ -62,7 +65,7 @@ export const parseBookingFunction = inngest.createFunction(
         return { bookingType: handler.bookingType };
       });
 
-      if (!bookingType) return { status: 'unknown_document' };
+      if (bookingType === null) return { status: 'unknown_document' };
 
       // The handler is re-resolved per step: step results cross a serialization
       // boundary, so only the plain booking type travels between steps.

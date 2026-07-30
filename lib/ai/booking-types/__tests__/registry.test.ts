@@ -16,6 +16,12 @@ describe('bookingTypeHandlers', () => {
     const toolNames = Object.values(bookingTypeHandlers).map((h) => h.toolName);
     expect(new Set(toolNames).size).toBe(toolNames.length);
   });
+
+  it('produces a valid tool input schema for every handler', () => {
+    for (const handler of Object.values(bookingTypeHandlers)) {
+      expect(handler.inputJsonSchema()).toMatchObject({ type: 'object' });
+    }
+  });
 });
 
 describe('getBookingTypeHandler', () => {
@@ -38,6 +44,7 @@ describe('buildClassifierSystemPrompt', () => {
     const prompt = buildClassifierSystemPrompt();
     for (const handler of Object.values(bookingTypeHandlers)) {
       expect(prompt).toContain(`"${handler.bookingType}"`);
+      expect(handler.classifierDescription.length).toBeGreaterThan(0);
       expect(prompt).toContain(handler.classifierDescription);
     }
   });

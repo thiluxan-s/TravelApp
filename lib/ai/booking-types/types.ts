@@ -1,5 +1,5 @@
 import type Anthropic from '@anthropic-ai/sdk';
-import type { BookingType, SegmentType, NewSegment } from '@/lib/db/schema';
+import type { BookingType, NewSegment } from '@/lib/db/schema';
 
 /** Booking types that have a parsing handler. 'unknown' is a classification outcome, not a type we parse. */
 export type HandledBookingType = Exclude<BookingType, 'unknown'>;
@@ -28,7 +28,6 @@ export type SegmentFields = Omit<NewSegment, 'bookingId' | 'tripId'>;
  */
 export type BookingTypeHandler = {
   bookingType: HandledBookingType;
-  segmentType: SegmentType;
   /** Anthropic tool name, e.g. 'record_flight_booking'. Must be unique across handlers. */
   toolName: string;
   toolDescription: string;

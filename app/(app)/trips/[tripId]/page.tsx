@@ -8,6 +8,7 @@ import { groupSegmentsByDay } from '@/lib/itinerary/group-by-day';
 import { ItineraryTimeline } from '@/components/itinerary/ItineraryTimeline';
 import { ParsingBanner } from '@/components/itinerary/ParsingBanner';
 import { MapPanel } from '@/components/itinerary/MapPanel';
+import { buttonVariants } from '@/components/ui/button';
 import { AddBookingDialog } from '@/components/trips/AddBookingDialog';
 import { DeleteTripButton } from '@/components/trips/DeleteTripButton';
 import { BookingsPanel } from '@/components/trips/BookingsPanel';
@@ -50,6 +51,14 @@ export default async function TripDetailPage({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {segments.length > 0 && (
+            <a
+              href={`/trips/${tripId}/calendar.ics`}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              Export calendar
+            </a>
+          )}
           <AddBookingDialog tripId={tripId} />
           <DeleteTripButton tripId={tripId} />
         </div>

@@ -3,6 +3,7 @@ import { FlightDetailsSchema } from '@/lib/ai/schemas/flight';
 import { HotelDetailsSchema } from '@/lib/ai/schemas/hotel';
 import { TrainDetailsSchema } from '@/lib/ai/schemas/train';
 import { ReservationDetailsSchema } from '@/lib/ai/schemas/reservation';
+import { escapeText, foldLine, formatUtc } from './ics-format';
 
 /**
  * One calendar event, before serialization. The mappers produce this shape and a
@@ -176,4 +177,59 @@ const EVENT_BY_SEGMENT_TYPE: Record<SegmentType, (segment: Segment) => IcsEvent[
 
 export function segmentToEvents(segment: Segment): IcsEvent[] {
   return EVENT_BY_SEGMENT_TYPE[segment.type](segment);
+}
+
+function serializeEvent(event: IcsEvent): string[] {
+  const lines = [
+    'BEGIN:VEVENT',
+    `UID:${event.uid}`,
+    `DTSTAMP:${formatUtc(event.stamp)}`,
+    `DTSTART:${formatUtc(event.start)}`,
+    `DTEND:${formatUtc(event.end)}`,
+    `SUMMARY:${escapeText(event.summary)}`,
+  ];
+
+  // Omitted rather than emitted empty — an empty DESCRIPTION shows as a blank
+  // notes field in most clients.
+  if (event.description) lines.push(`DESCRIPTION:${escapeText(event.description)}`);
+  if (event.location) lines.push(`LOCATION:${escapeText(event.location)}`);
+  // GEO is a structured value: its semicolon is a separator, not text to escape.
+  if (event.geo) lines.push(`GEO:${event.geo.lat};${event.geo.lng}`);
+
+  lines.push('END:VEVENT');
+  return lines.map(foldLine);
+}
+
+export function segmentsToIcs(calendarName: string, segments: Segment[]): string {
+  // Callers flatten segments in booking-creation order (upload time), not
+  // itinerary order. Sorting makes the file readable and the output stable.
+  const events = segments
+    .slice()
+    .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+    .flatMap(segmentToEvents);
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Wayfare//Itinerary//EN',
+    'CALSCALE:GREGORIAN',
+    foldLine(`X-WR-CALNAME:${escapeText(calendarName)}`),
+    ...events.flatMap(serializeEvent),
+    'END:VCALENDAR',
+  ];
+
+  return `${lines.join('\r\n')}\r\n`;
+}
+
+/**
+ * "Tokyo, March 2026" -> "wayfare-tokyo-march-2026.ics". A title with no ASCII
+ * alphanumerics — one written entirely in Japanese — slugs to an empty string,
+ * so it falls back rather than producing "wayfare-.ics".
+ */
+export function icsFilename(tripTitle: string): string {
+  const slug = tripTitle
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return `wayfare-${slug || 'itinerary'}.ics`;
 }

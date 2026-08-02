@@ -55,6 +55,16 @@ Not a regression Phase 7A introduced — but Phase 7A is what surfaced it. Fix b
 
 Full write-up, plus the smaller deferred items from the same review: `docs/superpowers/plans/2026-07-29-phase-7a-follow-ups.md`. Slot into Phase 7B, which rewrites those step bodies anyway.
 
+### `.ics` re-import may duplicate rather than update in strict clients
+
+Events carry stable UIDs derived from segment ids, but no `SEQUENCE` property, which RFC 5545 defaults to 0. A second import after a segment changed therefore never presents itself as a newer revision, so whether it updates or duplicates is client-specific leniency. Lenient importers such as Google Calendar generally update on a UID match; stricter ones may duplicate or prompt. A correct fix needs a real revision counter, which is out of scope for Phase 7E.
+
+### A non-UUID `tripId` returns 500 rather than 404
+
+`getTripWithBookings` passes the path segment straight into a `uuid` column comparison, so Postgres raises `invalid input syntax for type uuid` and the handler has no catch. This affects `app/(app)/trips/[tripId]/calendar.ics/route.ts` and, identically, the pre-existing `app/(app)/trips/[tripId]/page.tsx`.
+
+Pre-existing, not introduced by Phase 7E. Per this project's convention, incidental bugfixes are pulled into their own branch off `main` rather than folded into a feature phase — so it is recorded here rather than fixed on this branch.
+
 ---
 
 ## Portfolio-facing

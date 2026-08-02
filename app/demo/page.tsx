@@ -38,9 +38,19 @@ export default async function DemoPage() {
           <Link href="/" className="text-lg font-semibold tracking-tight">
             Wayfare
           </Link>
-          <Link href="/sign-up" className={buttonVariants({ size: 'sm' })}>
-            Sign up free
-          </Link>
+          <div className="flex items-center gap-2">
+            {segments.length > 0 && (
+              <a
+                href="/demo/calendar.ics"
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                Export calendar
+              </a>
+            )}
+            <Link href="/sign-up" className={buttonVariants({ size: 'sm' })}>
+              Sign up free
+            </Link>
+          </div>
         </div>
       </header>
 

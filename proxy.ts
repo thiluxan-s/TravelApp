@@ -7,6 +7,11 @@ const isPublicRoute = createRouteMatcher([
   '/api/clerk/webhook',
   '/api/inngest',
   '/demo',
+  // Listed separately from '/demo' (an exact match) rather than switching that
+  // entry to a prefix: this is an auth boundary, so it enumerates exactly what
+  // is public. A future route added under /demo should be a deliberate
+  // decision to expose, not something that inherits public access silently.
+  '/demo/calendar.ics',
   '/opengraph-image',
   '/icon',
   '/apple-icon',

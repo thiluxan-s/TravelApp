@@ -73,11 +73,15 @@ app/(app)/trips/[tripId]/__tests__/actions.test.ts   booking-level actions
 
 `vitest.config.ts` gains one line: `setupFiles: ['./vitest.setup.ts']`. `environment: 'node'` is unchanged — this harness needs no jsdom and adds no browser-side testing.
 
-### The setup file is load-bearing
+### The setup file is insurance, not a requirement
 
-`lib/env.server.ts` ends with `export const env = envSchema.parse(process.env)`, which runs at import. The action modules reach it transitively through `@/lib/r2` and `@/lib/inngest/client`. Without dummy values in `process.env` before those imports resolve, every action test fails at import time with a Zod error that says nothing about the real cause.
+`lib/env.server.ts` ends with `export const env = envSchema.parse(process.env)`, which runs at import and throws when the variables are absent — and `process.env` is empty under Vitest, which loads no `.env` files.
 
-The setup file therefore sets every variable in the schema to a syntactically valid dummy — `DATABASE_URL` a well-formed URL, `DEMO_TRIP_ID` a well-formed UUID — and never a real credential.
+**A spike proved the action tests do not actually need the setup file.** Seven modules import `env.server`, but the only two reachable from the server actions are `lib/db/index.ts` and `lib/r2/index.ts`, and both are mocked — so `env.server` is never evaluated and the action modules import cleanly with `process.env` untouched.
+
+It is included anyway, with its cost stated plainly: three lines and one config entry. The remaining five importers include `lib/ai/client.ts` and `lib/mapbox/client.ts`, which the Inngest parse job and the route handlers reach — both named in "Out of scope" as the likely next things to test. Whoever writes those tests without this file gets an eleven-field `ZodError` at import time that names none of the actual cause. This is a named, specific trigger rather than speculative generality.
+
+The file sets every variable in the schema to a syntactically valid dummy — `DATABASE_URL` a well-formed URL, `DEMO_TRIP_ID` a well-formed UUID — and never a real credential.
 
 ### The harness API
 

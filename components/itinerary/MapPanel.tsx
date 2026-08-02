@@ -19,7 +19,7 @@ export function MapPanel({
   days,
 }: {
   segments: Segment[];
-  days: { date: string; label: string }[];
+  days: { date: string; label: string; lodging: Segment | null }[];
 }) {
   const [selectedDay, setSelectedDay] = useState(days[0]?.date ?? '');
 
@@ -42,13 +42,19 @@ export function MapPanel({
     .slice()
     .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 
+  // A day whose only content is a stay would otherwise render an empty map.
+  // Show the stay's pin so the tab answers "where am I tonight".
+  const selectedLodging = days.find((d) => d.date === selectedDay)?.lodging ?? null;
+  const mapSegments =
+    daySegments.length === 0 && selectedLodging ? [selectedLodging] : daySegments;
+
   if (days.length === 0) return null;
 
   return (
     <div className="flex h-full flex-col gap-2">
       <DayTabs days={tabDays} selectedDay={selectedDay} onSelect={setSelectedDay} />
       <div className="flex-1 overflow-hidden">
-        <TripMap segments={daySegments} />
+        <TripMap segments={mapSegments} />
       </div>
     </div>
   );

@@ -38,10 +38,22 @@ describe('the test harness', () => {
     expect(await db.select().from(trips)).toHaveLength(2);
   });
 
-  it('empties every table between tests', async () => {
-    // seedTwoUsers ran in the previous test; beforeEach must have cleared it.
+  it('empties every table when reset', async () => {
+    // Self-contained on purpose: an assertion that relies on a previous test
+    // having seeded would pass vacuously when this test is run on its own,
+    // whether or not resetTables does anything.
+    const { alice } = await seedTwoUsers(db);
+    const booking = await seedBooking(db, alice.trip.id);
+    await seedSegment(db, booking.id, alice.trip.id);
+
+    expect(await db.select().from(users)).toHaveLength(2);
+
+    await resetTables(db);
+
     expect(await db.select().from(users)).toHaveLength(0);
     expect(await db.select().from(trips)).toHaveLength(0);
+    expect(await db.select().from(bookings)).toHaveLength(0);
+    expect(await db.select().from(segments)).toHaveLength(0);
   });
 
   it('cascades a trip deletion through bookings to segments', async () => {

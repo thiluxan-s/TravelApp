@@ -125,9 +125,10 @@ describe('foldLine', () => {
   it('keeps every continuation line within 75 octets including its leading space', () => {
     const folded = foldLine('A'.repeat(300));
     const lines = folded.split('\r\n');
-    expect(new TextEncoder().encode(lines[0]).length).toBeLessThanOrEqual(75);
-    for (const line of lines.slice(1)) {
-      expect(new TextEncoder().encode(` ${line}`.slice(1)).length + 1).toBeLessThanOrEqual(75);
+    // Every entry after the first already begins with its continuation space,
+    // so each is measured exactly as it will appear in the file.
+    for (const line of lines) {
+      expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
     }
   });
 

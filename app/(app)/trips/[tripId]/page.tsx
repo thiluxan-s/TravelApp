@@ -31,7 +31,7 @@ export default async function TripDetailPage({
 
   const segments = trip.bookings.flatMap((b) => b.segments);
   const dayGroups = groupSegmentsByDay(segments);
-  const days = dayGroups.map((d) => ({ date: d.date, label: d.label }));
+  const days = dayGroups.map((d) => ({ date: d.date, label: d.label, lodging: d.lodging }));
 
   return (
     <div>

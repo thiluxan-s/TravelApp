@@ -7,6 +7,9 @@ export function icsResponse(tripTitle: string, segments: Segment[]): Response {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
       'Content-Disposition': `attachment; filename="${icsFilename(tripTitle)}"`,
+      // An itinerary is personal data — a shared cache must never hold one
+      // user's copy and serve it to another.
+      'Cache-Control': 'private, no-store',
     },
   });
 }

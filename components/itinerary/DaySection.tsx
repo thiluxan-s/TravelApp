@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import type { DayGroup } from '@/lib/itinerary/types';
 import type { Segment, SegmentType } from '@/lib/db/schema';
+import { HotelDetailsSchema } from '@/lib/ai/schemas/hotel';
 import { FlightCard } from './FlightCard';
 import { HotelCard } from './HotelCard';
 import { TrainCard } from './TrainCard';
@@ -32,6 +33,18 @@ export function DaySection({ day }: { day: DayGroup }) {
           </div>
         );
       })}
+      {day.lodging && <LodgingFooter segment={day.lodging} />}
     </div>
+  );
+}
+
+function LodgingFooter({ segment }: { segment: Segment }) {
+  const details = HotelDetailsSchema.safeParse(segment.details);
+  const name = details.success ? details.data.hotel_name : segment.startLocation;
+
+  return (
+    <p className="pt-1 text-xs text-muted-foreground">
+      <span aria-hidden="true">🏨</span> Staying at {name}
+    </p>
   );
 }

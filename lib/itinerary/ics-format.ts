@@ -41,9 +41,8 @@ export function foldLine(line: string): string {
   const out: string[] = [];
   let current = '';
   let currentOctets = 0;
-  // The first line gets the full budget; continuations lose two octets: one for
-  // the leading space that marks them as continuations, and one more to ensure
-  // the total line with space is 74 octets (not 75).
+  // The first line gets the full budget; continuations lose one octet to the
+  // leading space that marks them as continuations.
   let budget = MAX_OCTETS;
 
   for (const char of line) {
@@ -52,7 +51,7 @@ export function foldLine(line: string): string {
       out.push(current);
       current = '';
       currentOctets = 0;
-      budget = MAX_OCTETS - 2;
+      budget = MAX_OCTETS - 1;
     }
     current += char;
     currentOctets += size;

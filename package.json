@@ -42,6 +42,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
     "@tailwindcss/postcss": "^4",
     "@types/luxon": "^3.7.1",
     "@types/mapbox-gl": "^3.5.0",

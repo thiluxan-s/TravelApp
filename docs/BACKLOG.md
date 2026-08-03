@@ -18,9 +18,13 @@ That makes deploy order matter whenever a seed change and a code change depend o
 
 If this ever becomes annoying rather than merely surprising, `export const revalidate = 3600` is the cheap middle ground.
 
-### Runtime verification of Phases 7A, 7B, and 7C has not happened
+### Runtime verification of Phases 7A–7E has not happened
 
-All three phases shipped verified by typecheck, lint, and unit tests on their pure logic, but none got a browser or end-to-end pass. All need Clerk credentials, a live Neon database, and the Inngest dev server, so they were deliberately left to a human rather than faked. One session covers all three.
+All five phases shipped verified by typecheck, lint, and unit tests on their pure logic, but none got a browser or end-to-end pass. All need Clerk credentials, a live Neon database, and the Inngest dev server, so they were deliberately left to a human rather than faked. One session covers all five.
+
+The DB harness merged on 2026-08-02 does **not** close this. It proves the authorization logic and the data model; it runs no browser, sends no real PDF to Anthropic, and never exercises the Inngest job.
+
+**One partial exception, already banked.** `/demo/calendar.ics` is statically generated, so `npm run build` writes a real `.ics` to `.next/server/app/demo/calendar.ics.body`. Validated 2026-08-02 against the seeded trip: 8 events, unique UIDs, longest line exactly 75 octets, CRLF throughout, multibyte intact. Reading that file is a cheap way to check serializer changes against real data without a browser — but it only covers the demo route's output, not the authenticated route, the buttons, or whether a calendar client accepts the file.
 
 Setup: `npm run dev` plus `npx inngest-cli@latest dev` (dashboard at `localhost:8288`).
 
@@ -42,6 +46,21 @@ Setup: `npm run dev` plus `npx inngest-cli@latest dev` (dashboard at `localhost:
 - "Try again" → status returns to `parsing`, the Inngest job re-runs
 - "Remove" → the row disappears and stays gone after a refresh
 - A **successful** upload still lands on the timeline — retry touches segment deletion, so the happy path needs a regression check
+
+**Phase 7E — calendar export.** The serializer is heavily unit tested; nothing below is:
+
+- The "Export calendar" button appears on a trip with segments and is absent on one without
+- Clicking it **downloads** a file rather than opening it as text — that rests entirely on `Content-Disposition: attachment`, since the anchor carries no `download` attribute
+- Import the `.ics` into **Google Calendar and Apple Calendar**. Both, not one: events carry stable UIDs but no `SEQUENCE`, so whether a re-import updates or duplicates is client-specific leniency (see the item above)
+- The estimated dinner shows its "End time is estimated" note in the event details
+- A signed-in user requesting another user's `/trips/<id>/calendar.ics` gets 404 — this one *is* covered by tests now, so treat a failure here as a serious regression rather than an expected gap
+
+**Phase 7D — lodging on covered nights.** Against the seeded demo trip, whose hotel runs Mar 11 18:00 → Mar 14 11:00:
+
+- **Mar 11** shows the `HotelCard` and **no** footer — the stay is already a card that day
+- **Mar 12** exists as a day at all, shows no event cards, shows "Staying at Park Hyatt Tokyo", and its map tab shows the hotel pin rather than an empty map
+- **Mar 13** shows the Kyoto day trip **and** the footer, since that night is still covered
+- **Mar 14** shows the return flight and **no** footer — you are not staying there the morning you leave
 
 Note while doing this: a transient failure will currently surface as a permanent one (see the next item), so if something reads "couldn't be read" mid-run, check the Inngest dashboard before concluding it actually failed.
 
@@ -93,13 +112,29 @@ The seeded demo trip at `/demo` covers shot 1. Shots 2 and 3 need a real upload 
 
 ## Engineering health
 
-### No DB test harness
+### What the DB harness still does not cover
 
-`vitest.config.ts` is `environment: 'node'` with no jsdom, no testing-library, and no database harness, so only pure functions are unit tested today.
+**Done, 2026-08-02 (PR #8).** `lib/db/__tests__/harness.ts` runs the real server actions against in-process pglite Postgres. Ownership is now proven for all six actions and the `.ics` route: non-owners get `Forbidden`, signed-out callers get `Unauthorized`, and where an action mutates the tests assert the row is unchanged too. Suite is 168, up from 130.
 
-The ownership checks in the server actions are the highest-consequence logic in the app and are currently verified only by reading them. A Neon branch or pglite instance plus a helper that seeds two users and asserts user B gets `Forbidden` on every action would be roughly 60 lines and would cover the class of bug that actually hurts.
+What remains untested, in rough order of what could actually hurt:
 
-Worth more than component testing (jsdom + testing-library, three new dev dependencies), which buys the least per unit of setup. Wanted before Phase 7C; Phase 7B needs no new infrastructure.
+- **The Inngest parse job.** It crosses step boundaries and calls Anthropic, Mapbox, and R2; it needs a different harness than this one. It is also the only place `bookings.status` is written five times.
+- **`app/(app)/trips/[tripId]/page.tsx`.** It holds a copy of the ownership check that no test covers. The `.ics` route's copy was found untested during the harness review and closed; this one is the same shape and was left because a Server Component needs more setup than a route handler.
+- **Components.** Still needs jsdom + testing-library, three dev dependencies, and still buys the least per unit of setup. No change to that judgement.
+
+### `neon-http` cannot do transactions and pglite can
+
+Production uses `drizzle-orm/neon-http`; the tests use pglite. Today that divergence is theoretical — `grep -rn "\.transaction("` returns zero hits, so nothing relies on it.
+
+The hazard is one-directional and silent: the HTTP driver has no transaction support at all, while pglite does. The day someone wraps a multi-step write in `db.transaction(...)`, the tests will pass green and production will throw at runtime. If that day comes, the fix is `drizzle-orm/neon-serverless` over a WebSocket pool, not a change to the tests.
+
+### The test suite pays migration cost per file
+
+Runtime went from under 2 seconds to about 13, entirely from four pglite instances each applying the four committed migrations in `beforeAll`.
+
+That cost is deliberate: applying the real migrations is what makes a broken migration fail the suite, which a schema push would conceal. Not worth optimising at four files.
+
+If DB-backed test files grow past four or five, the cheap fix is to migrate once in a Vitest `globalSetup`, call pglite's `dumpDataDir()`, and have each file start from `PGlite.create({ loadDataDir })` — restore is milliseconds. Roughly 20 lines, and it would cut most of the current 13 seconds.
 
 ### The booking status machine is undocumented
 

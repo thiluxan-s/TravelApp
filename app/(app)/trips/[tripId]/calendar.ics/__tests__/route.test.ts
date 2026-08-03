@@ -58,7 +58,14 @@ describe('GET /trips/[tripId]/calendar.ics', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(await response.text()).toContain('BEGIN:VCALENDAR');
+    const body = await response.text();
+    expect(body).toContain('BEGIN:VCALENDAR');
+    expect(body).toContain('BEGIN:VEVENT');
+    // seedSegment defaults to a flight with empty `details`, so the flight
+    // mapper falls back to the segment's endLocation for its summary. Asserting
+    // on segment-derived text is what proves the booking reached the response —
+    // BEGIN:VCALENDAR alone is emitted even for a trip with no bookings.
+    expect(body).toContain('Flight to Tokyo Narita (NRT)');
   });
 
   it('returns 404 without a calendar body when another signed-in user requests it', async () => {

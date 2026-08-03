@@ -108,3 +108,7 @@ Four writers to `bookings.status` — `confirmBookingUploadedAction`, `retryBook
 ### Dead code: `getTripAction`
 
 `app/(app)/trips/[tripId]/actions.ts` — zero callers. It is an exported server action, so Next.js still ships an action ID and a live POST endpoint for it. Harmless (it does verify ownership), but unnecessary.
+
+### `requestBookingUploadAction` has no happy-path test
+
+The db-test-harness branch covers its ownership check (another user's trip gets `Forbidden` without creating a booking) but not the success path. Two things are unverified as a result: that `fileKey` is actually namespaced per user as `${user.id}/${tripId}/${booking.id}/${fileName}`, and that the orphaned booking row is cleaned up when `getPresignedUploadUrl` throws (see the catch around it in `app/(app)/trips/[tripId]/actions.ts`). Not a cross-user read path, which is why it fell outside the ownership-check batch this branch focused on.

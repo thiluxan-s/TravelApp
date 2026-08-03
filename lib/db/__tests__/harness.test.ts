@@ -47,6 +47,9 @@ describe('the test harness', () => {
     await seedSegment(db, booking.id, alice.trip.id);
 
     expect(await db.select().from(users)).toHaveLength(2);
+    expect(await db.select().from(trips)).toHaveLength(2);
+    expect(await db.select().from(bookings)).toHaveLength(1);
+    expect(await db.select().from(segments)).toHaveLength(1);
 
     await resetTables(db);
 
@@ -60,6 +63,9 @@ describe('the test harness', () => {
     const { alice } = await seedTwoUsers(db);
     const booking = await seedBooking(db, alice.trip.id);
     await seedSegment(db, booking.id, alice.trip.id);
+
+    expect(await db.select().from(bookings)).toHaveLength(1);
+    expect(await db.select().from(segments)).toHaveLength(1);
 
     await db.delete(trips).where(eq(trips.id, alice.trip.id));
 

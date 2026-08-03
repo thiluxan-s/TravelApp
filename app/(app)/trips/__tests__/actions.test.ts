@@ -152,6 +152,9 @@ describe('deleteTripAction', () => {
     await seedSegment(h.db, booking.id, alice.trip.id);
     h.clerkUserId = CLERK_ALICE;
 
+    expect(await h.db.select().from(bookings)).toHaveLength(1);
+    expect(await h.db.select().from(segments)).toHaveLength(1);
+
     expect(await deleteTripAction(alice.trip.id)).toEqual({ ok: true });
     expect(await h.db.select().from(bookings)).toHaveLength(0);
     expect(await h.db.select().from(segments)).toHaveLength(0);

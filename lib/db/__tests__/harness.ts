@@ -1,6 +1,8 @@
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
+import { getTableName, is } from 'drizzle-orm';
+import { PgTable } from 'drizzle-orm/pg-core';
 import * as schema from '@/lib/db/schema';
 import type {
   Booking,
@@ -10,6 +12,14 @@ import type {
   Trip,
   User,
 } from '@/lib/db/schema';
+
+// Derived rather than hardcoded so a table added to schema.ts in a future
+// migration is truncated automatically instead of silently leaking rows
+// between tests. Drizzle's internal migrations-tracking table is not declared
+// in schema.ts, so it is not a PgTable export here and is correctly excluded.
+const TABLE_NAMES = (Object.values(schema) as unknown[])
+  .filter((value): value is PgTable => is(value, PgTable))
+  .map((table) => getTableName(table));
 
 export type TestDb = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -35,11 +45,14 @@ export async function createTestDb(): Promise<TestDb> {
 }
 
 /**
- * Empties every table. CASCADE handles the foreign keys; RESTART IDENTITY is a
- * no-op against uuid primary keys but keeps this correct if a serial is added.
+ * Empties every table. The table list is derived from schema.ts (see
+ * TABLE_NAMES above), so a new table is covered automatically without this
+ * comment or call site going stale. CASCADE handles the foreign keys; RESTART
+ * IDENTITY is a no-op against uuid primary keys but keeps this correct if a
+ * serial is added.
  */
 export async function resetTables(db: TestDb): Promise<void> {
-  await db.execute('TRUNCATE users, trips, bookings, segments RESTART IDENTITY CASCADE');
+  await db.execute(`TRUNCATE ${TABLE_NAMES.join(', ')} RESTART IDENTITY CASCADE`);
 }
 
 export type SeededUser = { user: User; trip: Trip };
@@ -88,7 +101,13 @@ export async function seedBooking(
     .values({
       tripId,
       status: 'parsed',
-      fileKey: `uploads/${tripId}/confirmation.pdf`,
+      // Mirrors production's `${user.id}/${tripId}/${booking.id}/${fileName}`
+      // shape (requestBookingUploadAction in
+      // app/(app)/trips/[tripId]/actions.ts) so this doesn't mislead the next
+      // reader into thinking fileKey is a flat "uploads/..." path. The real
+      // booking id isn't known until after this insert, so it's a placeholder
+      // segment here rather than the row's actual id.
+      fileKey: `seed-user-id/${tripId}/seed-booking-id/confirmation.pdf`,
       fileName: 'confirmation.pdf',
       fileSizeBytes: 1024,
       mimeType: 'application/pdf',

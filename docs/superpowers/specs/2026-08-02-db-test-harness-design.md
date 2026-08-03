@@ -79,7 +79,7 @@ app/(app)/trips/[tripId]/__tests__/actions.test.ts   booking-level actions
 
 **A spike proved the action tests do not actually need the setup file.** Seven modules import `env.server`, but the only two reachable from the server actions are `lib/db/index.ts` and `lib/r2/index.ts`, and both are mocked — so `env.server` is never evaluated and the action modules import cleanly with `process.env` untouched.
 
-It is included anyway, with its cost stated plainly: three lines and one config entry. The remaining five importers include `lib/ai/client.ts` and `lib/mapbox/client.ts`, which the Inngest parse job and the route handlers reach — both named in "Out of scope" as the likely next things to test. Whoever writes those tests without this file gets an eleven-field `ZodError` at import time that names none of the actual cause. This is a named, specific trigger rather than speculative generality.
+It is included anyway, with its cost stated plainly: three lines and one config entry. The remaining five importers include `lib/ai/client.ts` and `lib/mapbox/client.ts`, which the Inngest parse job and the route handlers reach — both named in "Out of scope" as the likely next things to test. Whoever writes those tests without this file gets a twelve-field `ZodError` at import time that names none of the actual cause. This is a named, specific trigger rather than speculative generality.
 
 The file sets every variable in the schema to a syntactically valid dummy — `DATABASE_URL` a well-formed URL, `DEMO_TRIP_ID` a well-formed UUID — and never a real credential.
 

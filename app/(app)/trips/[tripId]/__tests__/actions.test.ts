@@ -51,6 +51,13 @@ beforeAll(async () => {
 beforeEach(async () => {
   await resetTables(h.db);
   h.clerkUserId = null;
+  // clearAllMocks resets call history but does not drain a queued
+  // mockRejectedValueOnce/mockResolvedValueOnce — a leftover one-shot would
+  // carry into the next test. mockReset would be wrong here instead: it would
+  // also wipe the factory implementations set up in the vi.mock calls above.
+  // Both *Once calls below are consumed by the test that sets them, so
+  // nothing leaks today; this is for whoever next adds one on a path that
+  // might not execute.
   vi.clearAllMocks();
 });
 

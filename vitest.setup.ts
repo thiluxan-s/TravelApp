@@ -1,6 +1,6 @@
 // lib/env.server.ts runs `envSchema.parse(process.env)` at import and throws
 // when anything is missing. Vitest loads no .env files, so a test that reaches
-// any env.server importer dies at import time with an eleven-field ZodError
+// any env.server importer dies at import time with a twelve-field ZodError
 // naming none of the actual cause.
 //
 // The action tests do not strictly need this — they mock the only two importers

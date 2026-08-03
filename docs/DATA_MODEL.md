@@ -56,7 +56,7 @@ One row per uploaded file. This is the *document*, not the trip event(s) inside 
 {
   id: uuid (pk)
   trip_id: uuid (fk → trips.id, on delete cascade, indexed)
-  type: enum('flight', 'hotel', 'unknown')     // determined by classifier
+  type: enum('flight', 'hotel', 'train', 'reservation', 'unknown')  // determined by classifier
   status: enum(
     'uploading',      // pre-signed URL issued, file not yet confirmed
     'parsing',        // file in R2, Inngest job running or queued
@@ -87,7 +87,7 @@ The actual trip events. This is what the itinerary view queries.
   id: uuid (pk)
   booking_id: uuid (fk → bookings.id, on delete cascade, indexed)
   trip_id: uuid (fk → trips.id, on delete cascade, indexed)  // denormalized for query speed
-  type: enum('flight', 'hotel_stay')
+  type: enum('flight', 'hotel_stay', 'train_ride', 'reservation')
   
   // Timing — always UTC in DB, with IANA timezone separately
   start_time: timestamptz (not null)
@@ -150,7 +150,43 @@ For `type = 'hotel_stay'`:
 }
 ```
 
+For `type = 'train_ride'`:
+```ts
+{
+  train_number: string,            // "703"
+  operator: string,                // "JR Central"
+  confirmation_code: string | null,
+  departure_station: string,       // "Tokyo"
+  arrival_station: string,         // "Kyoto"
+  coach: string | null,
+  seat: string | null,
+  travel_class: string | null,     // "Green"
+}
+```
+
+For `type = 'reservation'` — restaurants, activities, tours, attractions:
+```ts
+{
+  name: string,                    // "Narisawa"
+  category: enum('restaurant', 'activity', 'tour', 'attraction', 'other'),
+  confirmation_code: string | null,
+  party_size: number | null,
+  address: string,
+  phone: string | null,
+  notes: string | null,
+  end_is_estimated: boolean,       // see below — derived, never extracted
+}
+```
+
 Zod schemas live in `lib/ai/schemas/`. The AI is prompted to produce JSON matching the schema, we validate, then we insert.
+
+**Why `end_is_estimated` exists.** `segments.end_time` is `not null`, but a dinner reservation rarely states an end time. Making the column nullable would have rippled into `computeAnnotations`, `groupSegmentsByDay`, the map, and the calendar export, and setting end = start would silently corrupt the annotations — "15 minutes between dinner and your train" would be measured from when dinner *starts*. So the handler fills a per-category default (restaurant 90 min, activity 2 h, tour 3 h, attraction 2 h, other 1 h) and records that it did.
+
+The flag is **derived by the handler, never extracted** — the model is not asked whether it guessed. Consumers must respect it:
+
+- `ReservationCard` renders a time *range* only when the end was explicit. An estimated dinner shows "7:00 PM", never a fabricated "7:00 – 8:30 PM".
+- `computeAnnotations` treats an estimated end as non-authoritative: gaps are measured from the segment's *start*, and an estimated end never raises an overlap conflict.
+- The `.ics` export does emit the estimated end, because a calendar event needs a duration and clients invent a worse one otherwise — but it discloses the estimate in the event description.
 
 ## What we deliberately don't model
 
